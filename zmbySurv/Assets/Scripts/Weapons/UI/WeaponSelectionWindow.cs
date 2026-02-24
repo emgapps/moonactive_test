@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Weapons.Providers;
 using Weapons.Runtime;
 
 namespace Weapons.UI
@@ -26,6 +27,8 @@ namespace Weapons.UI
         [SerializeField]
         private Text m_WeaponStatsText;
         [SerializeField]
+        private Image m_WeaponImage;
+        [SerializeField]
         private Text m_PageText;
         [SerializeField]
         private Text m_ErrorText;
@@ -43,6 +46,7 @@ namespace Weapons.UI
         #region Private Fields
 
         private WeaponCatalogService m_CatalogService;
+        private IWeaponImageProvider m_WeaponImageProvider;
         private WeaponConfigCatalog m_Catalog;
         private int m_CurrentIndex;
         private bool m_IsSelecting;
@@ -56,6 +60,8 @@ namespace Weapons.UI
 
         private void Awake()
         {
+            m_WeaponImageProvider ??= new WeaponImageProvider();
+
             LogVerbose(
                 $"[Weapons] SelectionWindowAwake | object={name} selfActive={gameObject.activeSelf} hierarchyActive={gameObject.activeInHierarchy} hasRoot={(m_SelectionRoot != null)}");
 
@@ -63,6 +69,11 @@ namespace Weapons.UI
             {
                 m_SelectionRoot.SetActive(false);
                 LogVerbose($"[Weapons] SelectionRootHidden | root={m_SelectionRoot.name}");
+            }
+
+            if (m_WeaponImage != null)
+            {
+                m_WeaponImage.sprite = null;
             }
         }
 
@@ -219,6 +230,7 @@ namespace Weapons.UI
                 $"Type: {currentWeapon.WeaponType}\nDamage: {currentWeapon.Damage}\nMagazine: {currentWeapon.MagazineSize}\n" +
                 $"Fire Rate: {currentWeapon.FireRateSeconds:0.00}s\nReload: {currentWeapon.ReloadTimeSeconds:0.00}s\n" +
                 $"Range: {currentWeapon.Range:0.0}";
+            RefreshWeaponImage(currentWeapon);
 
             if (m_PageText != null)
             {
@@ -229,6 +241,23 @@ namespace Weapons.UI
             {
                 m_ErrorText.text = string.Empty;
             }
+        }
+
+        private void RefreshWeaponImage(WeaponConfigDefinition weaponDefinition)
+        {
+            if (m_WeaponImage == null)
+            {
+                return;
+            }
+
+            if (weaponDefinition == null || m_WeaponImageProvider == null)
+            {
+                m_WeaponImage.sprite = null;
+                return;
+            }
+
+            Sprite weaponSprite = m_WeaponImageProvider.GetWeaponImage(weaponDefinition);
+            m_WeaponImage.sprite = weaponSprite;
         }
 
         private void HandlePreviousClicked()
