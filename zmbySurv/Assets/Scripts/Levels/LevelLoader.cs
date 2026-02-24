@@ -3,6 +3,8 @@ using Characters;
 using Level.Data;
 using Level.Providers;
 using UnityEngine;
+using Weapons.Runtime;
+using Weapons.UI;
 
 namespace Level
 {
@@ -53,6 +55,12 @@ namespace Level
         [SerializeField]
         private HomeManager homeManager;
 
+        [Header("Weapon Selection")]
+        [SerializeField]
+        private bool m_RequireWeaponSelection = true;
+        [SerializeField]
+        private WeaponSelectionWindow m_WeaponSelectionWindow;
+
         #endregion
 
         #region Private Fields
@@ -63,6 +71,7 @@ namespace Level
         private List<EnemyController> m_SpawnedZombies = new List<EnemyController>();
         private ILevelDataProvider m_DataProvider;
         private bool m_IsLoading = false;
+        private bool m_HasInitializedStartupFlow = false;
 
         #endregion
 
@@ -102,7 +111,7 @@ namespace Level
         private void Start()
         {
             InitializeDataProvider();
-            LoadLevel();
+            BeginStartupFlow();
         }
 
         #endregion
@@ -193,6 +202,33 @@ namespace Level
 
         #region Private Helper Methods
 
+        private void BeginStartupFlow()
+        {
+            if (m_HasInitializedStartupFlow)
+            {
+                return;
+            }
+
+            m_HasInitializedStartupFlow = true;
+
+            if (!m_RequireWeaponSelection || WeaponSelectionSession.HasSelection)
+            {
+                LoadLevel();
+                return;
+            }
+
+            if (m_WeaponSelectionWindow != null)
+            {
+                m_WeaponSelectionWindow.BeginSelection(
+                    onConfirmed: HandleWeaponSelectionConfirmed,
+                    onFailed: HandleWeaponSelectionFailed);
+                return;
+            }
+
+            AutoSelectDefaultWeapon();
+            LoadLevel();
+        }
+
         private void InitializeDataProvider()
         {
             switch (m_ProviderType)
@@ -211,6 +247,43 @@ namespace Level
                     m_DataProvider = new ResourcesLevelDataProvider(m_ResourcesPath);
                     break;
             }
+        }
+
+        private void HandleWeaponSelectionConfirmed()
+        {
+            Debug.Log("[LevelLoader] WeaponSelectionConfirmed | source=selection_window");
+            LoadLevel();
+        }
+
+        private void HandleWeaponSelectionFailed(string errorMessage)
+        {
+            Debug.LogWarning($"[LevelLoader] WeaponSelectionFallback | error={errorMessage}");
+            AutoSelectDefaultWeapon();
+            LoadLevel();
+        }
+
+        private void AutoSelectDefaultWeapon()
+        {
+            WeaponCatalogService catalogService = WeaponCatalogService.CreateDefault();
+
+            catalogService.LoadCatalog(
+                onSuccess: catalog =>
+                {
+                    WeaponSelectionSession.SetCatalog(catalog);
+                    if (!WeaponSelectionSession.TrySelectWeapon(catalog.DefaultWeaponId))
+                    {
+                        Debug.LogError(
+                            $"[LevelLoader] WeaponAutoSelectionFailed | reason=invalid_default weaponId={catalog.DefaultWeaponId}");
+                        return;
+                    }
+
+                    Debug.Log(
+                        $"[LevelLoader] WeaponAutoSelected | weaponId={catalog.DefaultWeaponId} reason=missing_selection_window");
+                },
+                onError: error =>
+                {
+                    Debug.LogError($"[LevelLoader] WeaponAutoSelectionFailed | reason=catalog_load_error error={error}");
+                });
         }
 
         /// <summary>
