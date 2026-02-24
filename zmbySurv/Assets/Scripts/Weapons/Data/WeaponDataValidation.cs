@@ -115,6 +115,12 @@ namespace Weapons.Data
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(weapon.weaponImageName))
+            {
+                errorMessage = $"Weapon '{weapon.weaponId}' has empty weaponImageName.";
+                return false;
+            }
+
             if (!TryParseWeaponType(weapon.weaponType, out _))
             {
                 errorMessage = $"Weapon '{weapon.weaponId}' has unsupported weaponType='{weapon.weaponType}'.";

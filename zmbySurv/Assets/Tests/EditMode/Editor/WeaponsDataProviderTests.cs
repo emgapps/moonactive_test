@@ -43,6 +43,18 @@ namespace Weapons.Tests.EditMode
         }
 
         [Test]
+        public void TryValidateCatalog_WhenWeaponImageNameMissing_ReturnsFalse()
+        {
+            WeaponCatalogDto catalog = CreateValidCatalog();
+            catalog.weapons[0].weaponImageName = string.Empty;
+
+            bool isValid = WeaponDataValidation.TryValidateCatalog(catalog, out string errorMessage);
+
+            Assert.That(isValid, Is.False);
+            Assert.That(errorMessage, Does.Contain("weaponImageName"));
+        }
+
+        [Test]
         public void LoadWeaponCatalog_WhenResourceExists_ReturnsMappedDefinitions()
         {
             ResourcesWeaponConfigProvider provider = new ResourcesWeaponConfigProvider("Weapons/Weapons");
@@ -60,6 +72,8 @@ namespace Weapons.Tests.EditMode
             Assert.That(loadedCatalog.DefaultWeaponId, Is.EqualTo("pistol"));
             Assert.That(loadedCatalog.Weapons[1].WeaponType, Is.EqualTo(WeaponType.Shotgun));
             Assert.That(loadedCatalog.Weapons[2].MagazineSize, Is.EqualTo(30));
+            Assert.That(loadedCatalog.Weapons[0].WeaponImageName, Is.EqualTo("Pistol"));
+            Assert.That(loadedCatalog.Weapons[1].WeaponImageName, Is.EqualTo("Shotgun"));
         }
 
         [Test]
@@ -89,6 +103,7 @@ namespace Weapons.Tests.EditMode
                     {
                         weaponId = "pistol",
                         displayName = "Pistol",
+                        weaponImageName = "Pistol",
                         weaponType = "Pistol",
                         damage = 8,
                         magazineSize = 12,
@@ -102,6 +117,7 @@ namespace Weapons.Tests.EditMode
                     {
                         weaponId = "shotgun",
                         displayName = "Shotgun",
+                        weaponImageName = "Shotgun",
                         weaponType = "Shotgun",
                         damage = 5,
                         magazineSize = 6,

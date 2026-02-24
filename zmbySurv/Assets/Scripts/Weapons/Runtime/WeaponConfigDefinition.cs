@@ -18,6 +18,7 @@ namespace Weapons.Runtime
         /// <param name="range">Maximum damage application range.</param>
         /// <param name="pelletCount">Pellets emitted per shot.</param>
         /// <param name="spreadAngleDegrees">Total spread cone angle in degrees.</param>
+        /// <param name="weaponImageName">Weapon image name used by UI image providers.</param>
         public WeaponConfigDefinition(
             string weaponId,
             string displayName,
@@ -28,7 +29,8 @@ namespace Weapons.Runtime
             float reloadTimeSeconds,
             float range,
             int pelletCount,
-            float spreadAngleDegrees)
+            float spreadAngleDegrees,
+            string weaponImageName = "")
         {
             WeaponId = weaponId;
             DisplayName = displayName;
@@ -40,6 +42,7 @@ namespace Weapons.Runtime
             Range = range;
             PelletCount = pelletCount;
             SpreadAngleDegrees = spreadAngleDegrees;
+            WeaponImageName = weaponImageName;
         }
 
         /// <summary>
@@ -91,5 +94,10 @@ namespace Weapons.Runtime
         /// Gets the spread cone angle in degrees.
         /// </summary>
         public float SpreadAngleDegrees { get; }
+
+        /// <summary>
+        /// Gets the weapon image name used to resolve a sprite for UI.
+        /// </summary>
+        public string WeaponImageName { get; }
     }
 }

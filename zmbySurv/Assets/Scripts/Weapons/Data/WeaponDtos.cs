@@ -37,6 +37,11 @@ namespace Weapons.Data
         public string displayName;
 
         /// <summary>
+        /// Weapon image name used by UI image providers.
+        /// </summary>
+        public string weaponImageName;
+
+        /// <summary>
         /// Weapon type string (Pistol, Shotgun, Machinegun).
         /// </summary>
         public string weaponType;

@@ -4,6 +4,7 @@
     {
       "weaponId": "pistol",
       "displayName": "Pistol",
+      "weaponImageName": "Pistol",
       "weaponType": "Pistol",
       "damage": 8,
       "magazineSize": 12,
@@ -16,6 +17,7 @@
     {
       "weaponId": "shotgun",
       "displayName": "Shotgun",
+      "weaponImageName": "Shotgun",
       "weaponType": "Shotgun",
       "damage": 5,
       "magazineSize": 6,
@@ -28,6 +30,7 @@
     {
       "weaponId": "machinegun",
       "displayName": "Machinegun",
+      "weaponImageName": "Machinegun",
       "weaponType": "Machinegun",
       "damage": 3,
       "magazineSize": 30,

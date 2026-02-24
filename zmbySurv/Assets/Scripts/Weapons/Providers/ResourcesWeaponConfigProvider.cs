@@ -85,7 +85,8 @@ namespace Weapons.Providers
                     reloadTimeSeconds: weaponDto.reloadTime,
                     range: weaponDto.range,
                     pelletCount: weaponDto.pelletCount,
-                    spreadAngleDegrees: weaponDto.spreadAngle);
+                    spreadAngleDegrees: weaponDto.spreadAngle,
+                    weaponImageName: weaponDto.weaponImageName);
 
                 definitions.Add(definition);
             }
