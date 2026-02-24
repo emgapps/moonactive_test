@@ -3,6 +3,8 @@ using PlayerMovements;
 using UnityEngine;
 using UnityEngine.UI;
 using Weapons;
+using Weapons.Providers;
+using Weapons.Runtime;
 
 namespace Characters
 {
@@ -35,6 +37,10 @@ namespace Characters
         private Text m_LifeText;
         [SerializeField]
         private Text m_CoinText;
+        [SerializeField]
+        private Text m_bulletsText;
+        [SerializeField]
+        private Image m_weaponImage;
 
         #endregion
 
@@ -46,6 +52,7 @@ namespace Characters
         private bool m_IsDead = false;
         private bool m_IsInvulnerable = false;
         private PlayerWeaponController m_PlayerWeaponController;
+        private IWeaponImageProvider m_WeaponImageProvider;
 
         #endregion
 
@@ -149,6 +156,24 @@ namespace Characters
             {
                 m_PlayerWeaponController = gameObject.AddComponent<PlayerWeaponController>();
             }
+
+            m_WeaponImageProvider ??= new WeaponImageProvider();
+        }
+
+        /// <summary>
+        /// Subscribes to weapon runtime events to keep player HUD synchronized.
+        /// </summary>
+        private void OnEnable()
+        {
+            SubscribeWeaponUiEvents();
+        }
+
+        /// <summary>
+        /// Unsubscribes from weapon runtime events.
+        /// </summary>
+        private void OnDisable()
+        {
+            UnsubscribeWeaponUiEvents();
         }
 
         /// <summary>
@@ -170,6 +195,8 @@ namespace Characters
             {
                 m_CoinText.text = $"{m_Currency} / {m_TargetCurrency}";
             }
+
+            RefreshWeaponHudFromCurrentState();
         }
 
         /// <summary>
@@ -229,6 +256,7 @@ namespace Characters
             }
 
             m_PlayerWeaponController?.ResetForLevelStart();
+            RefreshWeaponHudFromCurrentState();
 
             Debug.Log($"PlayerController: Applied level config - Speed: {moveSpeed}, Health: {health}, Target: {targetCurrency}, Currency: {m_Currency}");
         }
@@ -315,6 +343,85 @@ namespace Characters
         {
             m_IsInvulnerable = invulnerable;
             Debug.Log($"PlayerController: Invulnerability set to {invulnerable}");
+        }
+
+        private void SubscribeWeaponUiEvents()
+        {
+            if (m_PlayerWeaponController == null)
+            {
+                return;
+            }
+
+            m_PlayerWeaponController.OnWeaponEquipped += HandleWeaponEquipped;
+            m_PlayerWeaponController.OnAmmoChanged += HandleAmmoChanged;
+        }
+
+        private void UnsubscribeWeaponUiEvents()
+        {
+            if (m_PlayerWeaponController == null)
+            {
+                return;
+            }
+
+            m_PlayerWeaponController.OnWeaponEquipped -= HandleWeaponEquipped;
+            m_PlayerWeaponController.OnAmmoChanged -= HandleAmmoChanged;
+        }
+
+        private void RefreshWeaponHudFromCurrentState()
+        {
+            if (m_PlayerWeaponController == null)
+            {
+                ApplyBulletsText(0, 0);
+                ApplyWeaponImage(null);
+                return;
+            }
+
+            ApplyBulletsText(m_PlayerWeaponController.CurrentAmmo, m_PlayerWeaponController.MagazineSize);
+
+            if (WeaponSelectionSession.TryGetSelectedWeapon(out WeaponConfigDefinition selectedDefinition))
+            {
+                ApplyWeaponImage(selectedDefinition);
+            }
+            else
+            {
+                ApplyWeaponImage(null);
+            }
+        }
+
+        private void HandleWeaponEquipped(WeaponConfigDefinition definition)
+        {
+            ApplyWeaponImage(definition);
+        }
+
+        private void HandleAmmoChanged(int currentAmmo, int magazineSize)
+        {
+            ApplyBulletsText(currentAmmo, magazineSize);
+        }
+
+        private void ApplyBulletsText(int currentAmmo, int magazineSize)
+        {
+            if (m_bulletsText == null)
+            {
+                return;
+            }
+
+            m_bulletsText.text = $"{currentAmmo}/{magazineSize}";
+        }
+
+        private void ApplyWeaponImage(WeaponConfigDefinition definition)
+        {
+            if (m_weaponImage == null)
+            {
+                return;
+            }
+
+            if (definition == null || m_WeaponImageProvider == null)
+            {
+                m_weaponImage.sprite = null;
+                return;
+            }
+
+            m_weaponImage.sprite = m_WeaponImageProvider.GetWeaponImage(definition);
         }
 
         #endregion
