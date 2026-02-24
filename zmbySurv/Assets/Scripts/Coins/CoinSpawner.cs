@@ -1,6 +1,7 @@
 using System;
 using Characters;
 using Coins;
+using Core.Pooling;
 using Level.Data;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -36,6 +37,7 @@ namespace Coins
         private Bounds m_TilemapBounds;
         private int m_CoinAmount = 0;
         private bool m_Spawn = true;
+        private GenericObjectPool<Coin> m_CoinPool;
 
         #endregion
 
@@ -43,6 +45,21 @@ namespace Coins
 
         private void Awake()
         {
+            if (coinPrefab == null)
+            {
+                Debug.LogError("[CoinSpawner] PoolInitializationFailed | reason=missing_coin_prefab");
+                return;
+            }
+
+            int initialPoolSize = Mathf.Max(1, maxCoinsOnBoard);
+            m_CoinPool = new GenericObjectPool<Coin>(
+                createInstance: CreateCoinInstance,
+                onGet: HandleCoinTakenFromPool,
+                onRelease: HandleCoinReturnedToPool,
+                onDestroy: HandleCoinDestroyedFromPool,
+                initialCapacity: initialPoolSize);
+
+            Debug.Log($"[CoinSpawner] PoolInitialized | initialCapacity={initialPoolSize}");
         }
 
         private void Start()
@@ -148,6 +165,46 @@ namespace Coins
         #endregion
 
         #region Private Helper Methods
+
+        private Coin CreateCoinInstance()
+        {
+            Coin coinInstance = Instantiate(coinPrefab, transform);
+            coinInstance.SetSpawner(this);
+            return coinInstance;
+        }
+
+        private void HandleCoinTakenFromPool(Coin coin)
+        {
+            if (coin == null)
+            {
+                return;
+            }
+
+            coin.transform.SetParent(transform, true);
+            coin.SetSpawner(this);
+            coin.gameObject.SetActive(true);
+        }
+
+        private void HandleCoinReturnedToPool(Coin coin)
+        {
+            if (coin == null)
+            {
+                return;
+            }
+
+            coin.transform.SetParent(transform, true);
+            coin.gameObject.SetActive(false);
+        }
+
+        private void HandleCoinDestroyedFromPool(Coin coin)
+        {
+            if (coin == null)
+            {
+                return;
+            }
+
+            Destroy(coin.gameObject);
+        }
 
         private void SpawnNewCoin()
         {
