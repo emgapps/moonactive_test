@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Characters;
 using Level.Data;
+using Level.Providers;
 using UnityEngine;
 
 namespace Level
@@ -77,9 +78,18 @@ namespace Level
         /// </summary>
         public LevelCollectionDto CurrentCollection => m_LevelCollection;
 
+        /// <summary>
+        /// Gets whether the currently active level is the last level in the collection.
+        /// </summary>
+        /// <returns>True when current level is the last configured level.</returns>
         public bool IsLastLevel()
         {
-            return true;
+            if (m_LevelCollection == null || m_LevelCollection.levels == null || m_LevelCollection.levels.Count == 0)
+            {
+                return true;
+            }
+
+            return m_CurrentLevelIndex >= m_LevelCollection.levels.Count - 1;
         }
 
         #endregion
@@ -113,7 +123,13 @@ namespace Level
                 return;
             }
 
-            Debug.Log($"LevelLoader: Loading level {m_CurrentLevelIndex + 1}");
+            if (!TryResolveCurrentLevelData())
+            {
+                return;
+            }
+
+            Debug.Log(
+                $"[LevelLoader] LoadLevel | index={m_CurrentLevelIndex} levelId={m_CurrentLevelData.levelId} levelName={m_CurrentLevelData.levelName}");
 
             CleanupLevel();
             ApplyPlayerConfiguration();
@@ -143,7 +159,19 @@ namespace Level
                 return false;
             }
 
-            m_CurrentLevelIndex++;
+            if (m_LevelCollection.levels == null || m_LevelCollection.levels.Count == 0)
+            {
+                Debug.LogError("LevelLoader: Level collection is empty.");
+                return false;
+            }
+
+            if (m_CurrentLevelIndex >= m_LevelCollection.levels.Count - 1)
+            {
+                Debug.Log("[LevelLoader] LoadNextLevelSkipped | reason=already_last_level");
+                return false;
+            }
+
+            m_CurrentLevelIndex += 1;
             
             LoadLevel();
             return true;
@@ -167,7 +195,22 @@ namespace Level
 
         private void InitializeDataProvider()
         {
-            Debug.LogError("LevelLoader: InitializeDataProvider() not implemented!");
+            switch (m_ProviderType)
+            {
+                case DataProviderType.Resources:
+                    m_DataProvider = new ResourcesLevelDataProvider(m_ResourcesPath);
+                    Debug.Log($"[LevelLoader] DataProviderInitialized | type=resources path={m_ResourcesPath}");
+                    break;
+                case DataProviderType.Server:
+                    Debug.LogWarning(
+                        $"[LevelLoader] ServerProviderUnavailable | fallback=resources url={m_ServerUrl} timeout={m_ServerTimeoutSeconds}");
+                    m_DataProvider = new ResourcesLevelDataProvider(m_ResourcesPath);
+                    break;
+                default:
+                    Debug.LogWarning($"[LevelLoader] UnknownProviderType | value={m_ProviderType} fallback=resources");
+                    m_DataProvider = new ResourcesLevelDataProvider(m_ResourcesPath);
+                    break;
+            }
         }
 
         /// <summary>
@@ -206,19 +249,113 @@ namespace Level
             }
             
             m_LevelCollection = levelCollection;
-            Debug.Log($"LevelLoader: Successfully loaded levels");
+            if (m_CurrentLevelIndex < 0 || m_CurrentLevelIndex >= m_LevelCollection.levels.Count)
+            {
+                m_CurrentLevelIndex = 0;
+            }
+
+            Debug.Log($"[LevelLoader] LevelsLoaded | count={m_LevelCollection.levels.Count}");
 
             LoadLevel();
         }
 
         private void ApplyPlayerConfiguration()
         {
-            Debug.LogError("LevelLoader: ApplyPlayerConfiguration() not implemented!");
+            if (m_CurrentLevelData == null)
+            {
+                Debug.LogError("[LevelLoader] ApplyPlayerConfigurationFailed | reason=missing_current_level");
+                return;
+            }
+
+            if (playerController == null)
+            {
+                Debug.LogError("[LevelLoader] ApplyPlayerConfigurationFailed | reason=missing_player_controller");
+                return;
+            }
+
+            if (m_CurrentLevelData.playerConfig == null || m_CurrentLevelData.playerConfig.spawnPosition == null)
+            {
+                Debug.LogError(
+                    $"[LevelLoader] ApplyPlayerConfigurationFailed | reason=invalid_player_config levelId={m_CurrentLevelData.levelId}");
+                return;
+            }
+
+            PlayerConfigDto playerConfig = m_CurrentLevelData.playerConfig;
+            playerController.transform.position = playerConfig.spawnPosition.ToUnityVector3();
+            playerController.ApplyLevelConfiguration(playerConfig.speed, playerConfig.health, m_CurrentLevelData.goalCoins);
+
+            Debug.Log(
+                $"[LevelLoader] PlayerConfigured | levelId={m_CurrentLevelData.levelId} speed={playerConfig.speed} health={playerConfig.health} targetCoins={m_CurrentLevelData.goalCoins}");
         }
 
         private void SpawnZombies()
         {
-            Debug.LogError("LevelLoader: SpawnZombies() not implemented!");
+            if (m_CurrentLevelData == null)
+            {
+                Debug.LogError("[LevelLoader] SpawnZombiesFailed | reason=missing_current_level");
+                return;
+            }
+
+            if (zombiePrefab == null)
+            {
+                Debug.LogError("[LevelLoader] SpawnZombiesFailed | reason=missing_zombie_prefab");
+                return;
+            }
+
+            if (playerController == null)
+            {
+                Debug.LogError("[LevelLoader] SpawnZombiesFailed | reason=missing_player_controller");
+                return;
+            }
+
+            if (m_CurrentLevelData.zombies == null)
+            {
+                Debug.LogError($"[LevelLoader] SpawnZombiesFailed | reason=null_zombie_collection levelId={m_CurrentLevelData.levelId}");
+                return;
+            }
+
+            int spawnedCount = 0;
+            for (int zombieIndex = 0; zombieIndex < m_CurrentLevelData.zombies.Count; zombieIndex++)
+            {
+                ZombieConfigDto zombieConfig = m_CurrentLevelData.zombies[zombieIndex];
+                if (zombieConfig == null || zombieConfig.spawnPosition == null)
+                {
+                    Debug.LogWarning(
+                        $"[LevelLoader] ZombieSkipped | levelId={m_CurrentLevelData.levelId} index={zombieIndex} reason=invalid_config");
+                    continue;
+                }
+
+                Transform parentTransform = zombieParent != null ? zombieParent : transform;
+                GameObject zombieObject = Instantiate(
+                    zombiePrefab,
+                    zombieConfig.spawnPosition.ToUnityVector3(),
+                    Quaternion.identity,
+                    parentTransform);
+
+                EnemyController enemyController = zombieObject.GetComponent<EnemyController>();
+                if (enemyController == null)
+                {
+                    Debug.LogError(
+                        $"[LevelLoader] ZombieSpawnFailed | levelId={m_CurrentLevelData.levelId} zombieId={zombieConfig.zombieId} reason=missing_enemy_controller");
+                    Destroy(zombieObject);
+                    continue;
+                }
+
+                enemyController.Player = playerController;
+                enemyController.ApplyLevelConfiguration(
+                    zombieConfig.moveSpeed,
+                    zombieConfig.chaseSpeed,
+                    zombieConfig.detectDistance,
+                    zombieConfig.attackRange,
+                    zombieConfig.attackPower,
+                    BuildPatrolPoints(zombieConfig));
+
+                m_SpawnedZombies.Add(enemyController);
+                spawnedCount += 1;
+            }
+
+            Debug.Log(
+                $"[LevelLoader] ZombiesSpawned | levelId={m_CurrentLevelData.levelId} spawned={spawnedCount} configured={m_CurrentLevelData.zombies.Count}");
         }
 
         /// <summary>
@@ -270,6 +407,54 @@ namespace Level
             {
                 Debug.LogWarning("LevelLoader: CoinSpawner reference not set in inspector!");
             }
+        }
+
+        private bool TryResolveCurrentLevelData()
+        {
+            if (m_LevelCollection == null || m_LevelCollection.levels == null || m_LevelCollection.levels.Count == 0)
+            {
+                Debug.LogError("[LevelLoader] ResolveLevelFailed | reason=empty_collection");
+                return false;
+            }
+
+            if (m_CurrentLevelIndex < 0 || m_CurrentLevelIndex >= m_LevelCollection.levels.Count)
+            {
+                Debug.LogError(
+                    $"[LevelLoader] ResolveLevelFailed | reason=index_out_of_range index={m_CurrentLevelIndex} count={m_LevelCollection.levels.Count}");
+                return false;
+            }
+
+            m_CurrentLevelData = m_LevelCollection.levels[m_CurrentLevelIndex];
+            if (m_CurrentLevelData == null)
+            {
+                Debug.LogError($"[LevelLoader] ResolveLevelFailed | reason=null_level_data index={m_CurrentLevelIndex}");
+                return false;
+            }
+
+            return true;
+        }
+
+        private List<Vector2> BuildPatrolPoints(ZombieConfigDto zombieConfig)
+        {
+            List<Vector2> patrolPoints = new List<Vector2>();
+            if (zombieConfig.patrolPath != null)
+            {
+                for (int pathIndex = 0; pathIndex < zombieConfig.patrolPath.Count; pathIndex++)
+                {
+                    Vector2Dto pathPoint = zombieConfig.patrolPath[pathIndex];
+                    if (pathPoint != null)
+                    {
+                        patrolPoints.Add(pathPoint.ToUnityVector2());
+                    }
+                }
+            }
+
+            if (patrolPoints.Count == 0 && zombieConfig.spawnPosition != null)
+            {
+                patrolPoints.Add(zombieConfig.spawnPosition.ToUnityVector2());
+            }
+
+            return patrolPoints;
         }
 
         #endregion
