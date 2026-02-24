@@ -1,0 +1,41 @@
+{
+  "defaultWeaponId": "pistol",
+  "weapons": [
+    {
+      "weaponId": "pistol",
+      "displayName": "Pistol",
+      "weaponType": "Pistol",
+      "damage": 8,
+      "magazineSize": 12,
+      "fireRate": 0.35,
+      "reloadTime": 1.2,
+      "range": 8.5,
+      "pelletCount": 1,
+      "spreadAngle": 0.0
+    },
+    {
+      "weaponId": "shotgun",
+      "displayName": "Shotgun",
+      "weaponType": "Shotgun",
+      "damage": 5,
+      "magazineSize": 6,
+      "fireRate": 0.9,
+      "reloadTime": 2.1,
+      "range": 6.0,
+      "pelletCount": 5,
+      "spreadAngle": 24.0
+    },
+    {
+      "weaponId": "machinegun",
+      "displayName": "Machinegun",
+      "weaponType": "Machinegun",
+      "damage": 3,
+      "magazineSize": 30,
+      "fireRate": 0.08,
+      "reloadTime": 1.8,
+      "range": 9.5,
+      "pelletCount": 1,
+      "spreadAngle": 2.0
+    }
+  ]
+}
