@@ -1,0 +1,214 @@
+{
+  "levels": [
+    {
+      "levelId": "level_1",
+      "levelName": "Tutorial Level",
+      "goalCoins": 10,
+      "maxCoinsOnBoard": 5,
+      "playerConfig": {
+        "speed": 5.0,
+        "health": 5,
+        "spawnPosition": {
+          "x": 7.5,
+          "y": 3.5
+        }
+      },
+      "zombies": [
+        {
+          "zombieId": "zombie_1",
+          "spawnPosition": {
+            "x": 5.0,
+            "y": 2.0
+          },
+          "moveSpeed": 2.0,
+          "chaseSpeed": 4.0,
+          "detectDistance": 2.0,
+          "attackRange": 0.5,
+          "attackPower": 1,
+          "patrolPath": [
+            { "x": 5.0, "y": 2.0 },
+            { "x": 7.0, "y": 2.0 },
+            { "x": 7.0, "y": 3.0 },
+            { "x": 5.0, "y": 3.0 }
+          ]
+        },
+        {
+          "zombieId": "zombie_2",
+          "spawnPosition": {
+            "x": -5.0,
+            "y": -2.0
+          },
+          "moveSpeed": 1.5,
+          "chaseSpeed": 3.5,
+          "detectDistance": 3.0,
+          "attackRange": 0.5,
+          "attackPower": 1,
+          "patrolPath": [
+            { "x": -5.0, "y": -2.0 },
+            { "x": -7.0, "y": -2.0 },
+            { "x": -7.0, "y": -3.0 },
+            { "x": -5.0, "y": -3.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "level_2",
+      "levelName": "Medium Challenge",
+      "goalCoins": 15,
+      "maxCoinsOnBoard": 7,
+      "playerConfig": {
+        "speed": 5.5,
+        "health": 7,
+        "spawnPosition": {
+          "x": -3.5,
+          "y": -3.5
+        }
+      },
+      "zombies": [
+        {
+          "zombieId": "zombie_1",
+          "spawnPosition": {
+            "x": 4.0,
+            "y": 2.5
+          },
+          "moveSpeed": 2.5,
+          "chaseSpeed": 5.0,
+          "detectDistance": 2.0,
+          "attackRange": 0.6,
+          "attackPower": 1,
+          "patrolPath": [
+            { "x": 4.0, "y": 2.5 },
+            { "x": 7.0, "y": 2.5 },
+            { "x": 7.0, "y": 3.0 },
+            { "x": 4.0, "y": 3.0 }
+          ]
+        },
+        {
+          "zombieId": "zombie_2",
+          "spawnPosition": {
+            "x": -4.0,
+            "y": 2.5
+          },
+          "moveSpeed": 2.0,
+          "chaseSpeed": 4.5,
+          "detectDistance": 2.0,
+          "attackRange": 0.6,
+          "attackPower": 1,
+          "patrolPath": [
+            { "x": -4.0, "y": 2.5 },
+            { "x": -7.0, "y": 2.5 },
+            { "x": -7.0, "y": 3.0 },
+            { "x": -4.0, "y": 3.0 }
+          ]
+        },
+        {
+          "zombieId": "zombie_3",
+          "spawnPosition": {
+            "x": 0.0,
+            "y": -2.5
+          },
+          "moveSpeed": 3.0,
+          "chaseSpeed": 5.5,
+          "detectDistance": 5.0,
+          "attackRange": 0.7,
+          "attackPower": 2,
+          "patrolPath": [
+            { "x": 0.0, "y": -2.5 },
+            { "x": 3.0, "y": -2.5 },
+            { "x": 3.0, "y": -3.0 },
+            { "x": -3.0, "y": -3.0 },
+            { "x": -3.0, "y": -2.5 }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "level_3",
+      "levelName": "Hard Mode",
+      "goalCoins": 20,
+      "maxCoinsOnBoard": 10,
+      "playerConfig": {
+        "speed": 6.0,
+        "health": 5,
+        "spawnPosition": {
+          "x": 0.0,
+          "y": 0.0
+        }
+      },
+      "zombies": [
+        {
+          "zombieId": "zombie_1",
+          "spawnPosition": {
+            "x": 6.0,
+            "y": 0.0
+          },
+          "moveSpeed": 3.0,
+          "chaseSpeed": 6.0,
+          "detectDistance": 1.0,
+          "attackRange": 0.8,
+          "attackPower": 2,
+          "patrolPath": [
+            { "x": 6.0, "y": 0.0 },
+            { "x": 7.5, "y": 1.5 },
+            { "x": 6.0, "y": 3.0 },
+            { "x": 4.0, "y": 1.5 }
+          ]
+        },
+        {
+          "zombieId": "zombie_2",
+          "spawnPosition": {
+            "x": -6.0,
+            "y": 0.0
+          },
+          "moveSpeed": 3.0,
+          "chaseSpeed": 6.0,
+          "detectDistance": 2.0,
+          "attackRange": 0.8,
+          "attackPower": 2,
+          "patrolPath": [
+            { "x": -6.0, "y": 0.0 },
+            { "x": -7.5, "y": 1.5 },
+            { "x": -6.0, "y": 3.0 },
+            { "x": -4.0, "y": 1.5 }
+          ]
+        },
+        {
+          "zombieId": "zombie_3",
+          "spawnPosition": {
+            "x": 0.0,
+            "y": 3.0
+          },
+          "moveSpeed": 2.5,
+          "chaseSpeed": 5.5,
+          "detectDistance": 3.0,
+          "attackRange": 0.7,
+          "attackPower": 1,
+          "patrolPath": [
+            { "x": 0.0, "y": 3.0 },
+            { "x": 3.0, "y": 3.5 },
+            { "x": -3.0, "y": 3.5 }
+          ]
+        },
+        {
+          "zombieId": "zombie_4",
+          "spawnPosition": {
+            "x": 0.0,
+            "y": -3.0
+          },
+          "moveSpeed": 3.5,
+          "chaseSpeed": 7.0,
+          "detectDistance": 5.0,
+          "attackRange": 0.9,
+          "attackPower": 2,
+          "patrolPath": [
+            { "x": 0.0, "y": -3.0 },
+            { "x": 4.0, "y": -2.5 },
+            { "x": -4.0, "y": -2.5 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
