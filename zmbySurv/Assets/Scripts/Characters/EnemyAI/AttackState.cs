@@ -71,7 +71,7 @@ namespace Characters.EnemyAI
             }
 
             // Keeps the enemy stationary while attacking.
-            m_Context.Controller.MoveTo(m_Context.Controller.transform.position);
+            m_Context.Controller.StopMovement();
 
             float currentTime = Time.time;
             if (currentTime < m_Context.NextAllowedAttackTime)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Characters.EnemyAI
@@ -40,7 +41,9 @@ namespace Characters.EnemyAI
         /// <summary>
         /// Returns whether patrol waypoints are available.
         /// </summary>
-        public bool HasPatrolPoints => m_Controller.patrolPoints != null && m_Controller.patrolPoints.Count > 0;
+        public bool HasPatrolPoints => PatrolPoints != null && PatrolPoints.Count > 0;
+
+        private IReadOnlyList<Vector2> PatrolPoints => m_Controller.PatrolPoints;
 
         /// <summary>
         /// Gets the current patrol target position.
@@ -53,7 +56,7 @@ namespace Characters.EnemyAI
                 return m_Controller.transform.position;
             }
 
-            return m_Controller.patrolPoints[m_CurrentPatrolPointIndex];
+            return PatrolPoints[m_CurrentPatrolPointIndex];
         }
 
         /// <summary>
@@ -66,7 +69,7 @@ namespace Characters.EnemyAI
                 return;
             }
 
-            m_CurrentPatrolPointIndex = (m_CurrentPatrolPointIndex + 1) % m_Controller.patrolPoints.Count;
+            m_CurrentPatrolPointIndex = (m_CurrentPatrolPointIndex + 1) % PatrolPoints.Count;
         }
 
         /// <summary>

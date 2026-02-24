@@ -78,7 +78,7 @@ namespace Characters.EnemyAI
             }
 
             m_TimeWithoutSight = 0f;
-            m_Context.Controller.MoveTo(playerTarget.position);
+            m_Context.Controller.MoveTo(playerTarget.position, m_Context.Controller.ChaseSpeed);
         }
 
         /// <summary>
