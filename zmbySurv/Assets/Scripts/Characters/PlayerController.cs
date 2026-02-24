@@ -2,6 +2,7 @@ using System;
 using PlayerMovements;
 using UnityEngine;
 using UnityEngine.UI;
+using Weapons;
 
 namespace Characters
 {
@@ -44,6 +45,7 @@ namespace Characters
         private Vector2 m_MoveDirection = Vector2.zero;
         private bool m_IsDead = false;
         private bool m_IsInvulnerable = false;
+        private PlayerWeaponController m_PlayerWeaponController;
 
         #endregion
 
@@ -128,6 +130,28 @@ namespace Characters
         #region Unity Lifecycle Methods
 
         /// <summary>
+        /// Caches required component references and ensures weapon controller is available.
+        /// </summary>
+        private void Awake()
+        {
+            if (m_Rigidbody2D == null)
+            {
+                m_Rigidbody2D = GetComponent<Rigidbody2D>();
+            }
+
+            if (m_Animator == null)
+            {
+                m_Animator = GetComponent<Animator>();
+            }
+
+            m_PlayerWeaponController = GetComponent<PlayerWeaponController>();
+            if (m_PlayerWeaponController == null)
+            {
+                m_PlayerWeaponController = gameObject.AddComponent<PlayerWeaponController>();
+            }
+        }
+
+        /// <summary>
         /// Initializes the player controller and UI elements.
         /// </summary>
         private void Start()
@@ -203,6 +227,8 @@ namespace Characters
             {
                 m_CoinText.text = $"{m_Currency} / {m_TargetCurrency}";
             }
+
+            m_PlayerWeaponController?.ResetForLevelStart();
 
             Debug.Log($"PlayerController: Applied level config - Speed: {moveSpeed}, Health: {health}, Target: {targetCurrency}, Currency: {m_Currency}");
         }
