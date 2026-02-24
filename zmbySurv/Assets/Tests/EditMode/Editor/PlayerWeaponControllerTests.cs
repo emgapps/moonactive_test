@@ -31,7 +31,7 @@ namespace Weapons.Tests.EditMode
         [Test]
         public void InitializeWeaponRuntime_EquipsSelectedWeapon()
         {
-            PrepareSelection("machinegun", magazineSize: 30);
+            PrepareSelection("machinegun", pistolMagazineSize: 12, machinegunMagazineSize: 30);
             PlayerWeaponController controller = CreateController();
 
             int ammoEventCurrent = -1;
@@ -54,7 +54,7 @@ namespace Weapons.Tests.EditMode
         [Test]
         public void TryShoot_WhenMagazineEmpty_AutoReloadAllowsFutureShot()
         {
-            PrepareSelection("pistol", magazineSize: 1);
+            PrepareSelection("pistol", pistolMagazineSize: 1, machinegunMagazineSize: 30);
             PlayerWeaponController controller = CreateController();
             controller.InitializeWeaponRuntime();
 
@@ -80,7 +80,7 @@ namespace Weapons.Tests.EditMode
         [Test]
         public void ResetForLevelStart_RefillsMagazine()
         {
-            PrepareSelection("pistol", magazineSize: 5);
+            PrepareSelection("pistol", pistolMagazineSize: 5, machinegunMagazineSize: 30);
             PlayerWeaponController controller = CreateController();
             controller.InitializeWeaponRuntime();
 
@@ -93,6 +93,26 @@ namespace Weapons.Tests.EditMode
             Assert.That(controller.CurrentAmmo, Is.EqualTo(5));
         }
 
+        [Test]
+        public void ResetForLevelStart_WhenSelectionChanged_SwitchesEquippedWeapon()
+        {
+            PrepareSelection("pistol", pistolMagazineSize: 5, machinegunMagazineSize: 30);
+            PlayerWeaponController controller = CreateController();
+            controller.InitializeWeaponRuntime();
+
+            Assert.That(controller.CurrentWeaponId, Is.EqualTo("pistol"));
+            Assert.That(controller.MagazineSize, Is.EqualTo(5));
+
+            bool selectionChanged = WeaponSelectionSession.TrySelectWeapon("machinegun");
+            Assert.That(selectionChanged, Is.True);
+
+            controller.ResetForLevelStart();
+
+            Assert.That(controller.CurrentWeaponId, Is.EqualTo("machinegun"));
+            Assert.That(controller.MagazineSize, Is.EqualTo(30));
+            Assert.That(controller.CurrentAmmo, Is.EqualTo(30));
+        }
+
         private PlayerWeaponController CreateController()
         {
             GameObject playerObject = new GameObject("PlayerWeaponControllerTest");
@@ -100,14 +120,14 @@ namespace Weapons.Tests.EditMode
             return playerObject.AddComponent<PlayerWeaponController>();
         }
 
-        private static void PrepareSelection(string selectedWeaponId, int magazineSize)
+        private static void PrepareSelection(string selectedWeaponId, int pistolMagazineSize, int machinegunMagazineSize)
         {
             WeaponConfigDefinition pistol = new WeaponConfigDefinition(
                 weaponId: "pistol",
                 displayName: "Pistol",
                 weaponType: WeaponType.Pistol,
                 damage: 8,
-                magazineSize: magazineSize,
+                magazineSize: pistolMagazineSize,
                 fireRateSeconds: 0.3f,
                 reloadTimeSeconds: 1.2f,
                 range: 8f,
@@ -119,7 +139,7 @@ namespace Weapons.Tests.EditMode
                 displayName: "Machinegun",
                 weaponType: WeaponType.Machinegun,
                 damage: 3,
-                magazineSize: magazineSize,
+                magazineSize: machinegunMagazineSize,
                 fireRateSeconds: 0.1f,
                 reloadTimeSeconds: 1.4f,
                 range: 9f,

@@ -57,6 +57,8 @@ namespace Level
         private HomeManager homeManager;
         [SerializeField]
         private int m_DefaultZombieHealth = 20;
+        [SerializeField]
+        private float m_DefaultZombieColliderRadius = 0.45f;
 
         [Header("Weapon Selection")]
         [SerializeField]
@@ -114,6 +116,8 @@ namespace Level
         private void Start()
         {
             InitializeDataProvider();
+            LogVerbose(
+                $"[LevelLoader] Startup | requireWeaponSelection={m_RequireWeaponSelection} hasSessionSelection={WeaponSelectionSession.HasSelection} hasSelectionWindow={(m_WeaponSelectionWindow != null)}");
             BeginStartupFlow();
         }
 
@@ -139,9 +143,6 @@ namespace Level
             {
                 return;
             }
-
-            Debug.Log(
-                $"[LevelLoader] LoadLevel | index={m_CurrentLevelIndex} levelId={m_CurrentLevelData.levelId} levelName={m_CurrentLevelData.levelName}");
 
             CleanupLevel();
             ApplyPlayerConfiguration();
@@ -179,7 +180,6 @@ namespace Level
 
             if (m_CurrentLevelIndex >= m_LevelCollection.levels.Count - 1)
             {
-                Debug.Log("[LevelLoader] LoadNextLevelSkipped | reason=already_last_level");
                 return false;
             }
 
@@ -197,7 +197,6 @@ namespace Level
                 return;
             }
             
-            Debug.Log($"LevelLoader: Reloading current level (index {m_CurrentLevelIndex})");
             LoadLevel();
         }
 
@@ -209,13 +208,18 @@ namespace Level
         {
             if (m_HasInitializedStartupFlow)
             {
+                LogVerbose("[LevelLoader] StartupFlowSkipped | reason=already_initialized");
                 return;
             }
 
             m_HasInitializedStartupFlow = true;
+            LogVerbose(
+                $"[LevelLoader] StartupFlowBegin | requireWeaponSelection={m_RequireWeaponSelection} hasSessionSelection={WeaponSelectionSession.HasSelection} selectionWindow={BuildSelectionWindowState()}");
 
             if (!m_RequireWeaponSelection || WeaponSelectionSession.HasSelection)
             {
+                LogVerbose(
+                    $"[LevelLoader] StartupFlowLoadLevelDirectly | reason={(m_RequireWeaponSelection ? "selection_already_present" : "selection_not_required")}");
                 LoadLevel();
                 return;
             }
@@ -228,6 +232,7 @@ namespace Level
                 return;
             }
 
+            Debug.LogWarning("[LevelLoader] StartupFlowFallbackAutoSelect | reason=missing_selection_window_reference");
             AutoSelectDefaultWeapon();
             LoadLevel();
         }
@@ -238,7 +243,6 @@ namespace Level
             {
                 case DataProviderType.Resources:
                     m_DataProvider = new ResourcesLevelDataProvider(m_ResourcesPath);
-                    Debug.Log($"[LevelLoader] DataProviderInitialized | type=resources path={m_ResourcesPath}");
                     break;
                 case DataProviderType.Server:
                     Debug.LogWarning(
@@ -254,19 +258,20 @@ namespace Level
 
         private void HandleWeaponSelectionConfirmed()
         {
-            Debug.Log("[LevelLoader] WeaponSelectionConfirmed | source=selection_window");
             LoadLevel();
         }
 
         private void HandleWeaponSelectionFailed(string errorMessage)
         {
-            Debug.LogWarning($"[LevelLoader] WeaponSelectionFallback | error={errorMessage}");
+            Debug.LogWarning(
+                $"[LevelLoader] WeaponSelectionFallback | error={errorMessage} hasSelectionWindow={(m_WeaponSelectionWindow != null)}");
             AutoSelectDefaultWeapon();
             LoadLevel();
         }
 
         private void AutoSelectDefaultWeapon()
         {
+            LogVerbose("[LevelLoader] WeaponAutoSelectBegin");
             WeaponCatalogService catalogService = WeaponCatalogService.CreateDefault();
 
             catalogService.LoadCatalog(
@@ -280,13 +285,30 @@ namespace Level
                         return;
                     }
 
-                    Debug.Log(
-                        $"[LevelLoader] WeaponAutoSelected | weaponId={catalog.DefaultWeaponId} reason=missing_selection_window");
                 },
                 onError: error =>
                 {
                     Debug.LogError($"[LevelLoader] WeaponAutoSelectionFailed | reason=catalog_load_error error={error}");
                 });
+        }
+
+        private string BuildSelectionWindowState()
+        {
+            if (m_WeaponSelectionWindow == null)
+            {
+                return "null";
+            }
+
+            GameObject windowObject = m_WeaponSelectionWindow.gameObject;
+            return
+                $"name={m_WeaponSelectionWindow.name},selfActive={windowObject.activeSelf},hierarchyActive={windowObject.activeInHierarchy}";
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private static void LogVerbose(string message)
+        {
+            // Intentionally no-op: verbose trace logs were removed to keep only important logs.
         }
 
         /// <summary>
@@ -330,8 +352,6 @@ namespace Level
                 m_CurrentLevelIndex = 0;
             }
 
-            Debug.Log($"[LevelLoader] LevelsLoaded | count={m_LevelCollection.levels.Count}");
-
             LoadLevel();
         }
 
@@ -360,8 +380,6 @@ namespace Level
             playerController.transform.position = playerConfig.spawnPosition.ToUnityVector3();
             playerController.ApplyLevelConfiguration(playerConfig.speed, playerConfig.health, m_CurrentLevelData.goalCoins);
 
-            Debug.Log(
-                $"[LevelLoader] PlayerConfigured | levelId={m_CurrentLevelData.levelId} speed={playerConfig.speed} health={playerConfig.health} targetCoins={m_CurrentLevelData.goalCoins}");
         }
 
         private void SpawnZombies()
@@ -425,14 +443,13 @@ namespace Level
                     zombieConfig.attackRange,
                     zombieConfig.attackPower,
                     BuildPatrolPoints(zombieConfig));
+                EnsureEnemyCombatCollider(enemyController.gameObject);
                 EnsureEnemyDamageable(enemyController.gameObject);
 
                 m_SpawnedZombies.Add(enemyController);
                 spawnedCount += 1;
             }
 
-            Debug.Log(
-                $"[LevelLoader] ZombiesSpawned | levelId={m_CurrentLevelData.levelId} spawned={spawnedCount} configured={m_CurrentLevelData.zombies.Count}");
         }
 
         /// <summary>
@@ -545,10 +562,73 @@ namespace Level
             if (damageable == null)
             {
                 damageable = enemyObject.AddComponent<EnemyDamageable>();
-                Debug.Log($"[LevelLoader] EnemyDamageableAdded | enemy={enemyObject.name}");
             }
 
             damageable.ConfigureHealth(m_DefaultZombieHealth);
+        }
+
+        private void EnsureEnemyCombatCollider(GameObject enemyObject)
+        {
+            if (enemyObject == null)
+            {
+                return;
+            }
+
+            Collider2D existingCollider = enemyObject.GetComponent<Collider2D>();
+            if (existingCollider != null)
+            {
+                LogVerbose(
+                    $"[LevelLoader] EnemyColliderReady | enemy={enemyObject.name} collider={DescribeCollider(existingCollider)}");
+                return;
+            }
+
+            CircleCollider2D collider = enemyObject.AddComponent<CircleCollider2D>();
+            collider.radius = ResolveEnemyColliderRadius(enemyObject);
+            collider.isTrigger = true;
+        }
+
+        private float ResolveEnemyColliderRadius(GameObject enemyObject)
+        {
+            float fallbackRadius = Mathf.Max(0.05f, m_DefaultZombieColliderRadius);
+            if (enemyObject == null)
+            {
+                return fallbackRadius;
+            }
+
+            SpriteRenderer spriteRenderer = enemyObject.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return fallbackRadius;
+            }
+
+            Vector2 spriteSize = spriteRenderer.sprite.bounds.size;
+            float scaleX = Mathf.Abs(enemyObject.transform.lossyScale.x);
+            float scaleY = Mathf.Abs(enemyObject.transform.lossyScale.y);
+            float worldHalfWidth = spriteSize.x * scaleX * 0.5f;
+            float worldHalfHeight = spriteSize.y * scaleY * 0.5f;
+            float spriteRadius = Mathf.Min(worldHalfWidth, worldHalfHeight) * 0.5f;
+            if (spriteRadius <= 0.0001f)
+            {
+                return fallbackRadius;
+            }
+
+            return Mathf.Max(0.05f, spriteRadius);
+        }
+
+        private static string DescribeCollider(Collider2D collider)
+        {
+            if (collider == null)
+            {
+                return "null";
+            }
+
+            string layerName = LayerMask.LayerToName(collider.gameObject.layer);
+            if (string.IsNullOrWhiteSpace(layerName))
+            {
+                layerName = $"layer_{collider.gameObject.layer}";
+            }
+
+            return $"{collider.GetType().Name}(layer={layerName},trigger={collider.isTrigger})";
         }
 
         #endregion

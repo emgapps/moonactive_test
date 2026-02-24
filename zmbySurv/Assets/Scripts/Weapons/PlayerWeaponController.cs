@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using UnityEngine;
 using Weapons.Providers;
 using Weapons.Combat;
@@ -155,16 +156,7 @@ namespace Weapons
                 return;
             }
 
-            m_ActiveDefinition = definition;
-            m_ActiveWeapon = new WeaponRuntime(definition);
-            m_IsInitialized = true;
-
-            PublishAmmoChanged();
-            PublishReloadProgress();
-            OnWeaponEquipped?.Invoke(definition);
-
-            Debug.Log(
-                $"[Weapons] Equipped | weaponId={definition.WeaponId} type={definition.WeaponType} damage={definition.Damage} magazine={definition.MagazineSize}");
+            EquipWeaponDefinition(definition, "initialize");
         }
 
         /// <summary>
@@ -186,6 +178,9 @@ namespace Weapons
 
             if (!fired)
             {
+                LogVerbose(
+                    $"[Weapons] ShotBlocked | result={result} weaponId={CurrentWeaponId} ammo={CurrentAmmo}/{MagazineSize} time={currentTimeSeconds:0.00}");
+
                 if (result == WeaponShootResult.BlockedNoAmmo && m_AutoReloadOnEmpty)
                 {
                     TryReload(currentTimeSeconds);
@@ -196,15 +191,17 @@ namespace Weapons
 
             PublishAmmoChanged();
             OnShotRequested?.Invoke(shot);
-            int appliedHits = m_HitResolver.ResolveShot(
+            Vector2 muzzlePosition = MuzzlePosition;
+            Vector2 muzzleDirection = MuzzleDirection;
+            LogVerbose(
+                $"[Weapons] ShotTraceBegin | weaponId={shot.WeaponId} origin={FormatVector2(muzzlePosition)} direction={FormatVector2(muzzleDirection)} mask={DescribeLayerMask(m_HitMask)} ownerCollider={DescribeCollider(m_OwnerCollider)}");
+
+            m_HitResolver.ResolveShot(
                 shot: shot,
-                origin: MuzzlePosition,
-                direction: MuzzleDirection,
+                origin: muzzlePosition,
+                direction: muzzleDirection,
                 hitMask: m_HitMask,
                 ownerCollider: m_OwnerCollider);
-
-            Debug.Log(
-                $"[Weapons] ShotRequested | weaponId={shot.WeaponId} ammo={m_ActiveWeapon.CurrentAmmo}/{m_ActiveWeapon.MagazineSize} pellets={shot.PelletCount} range={shot.Range:0.0} hits={appliedHits}");
 
             return true;
         }
@@ -224,12 +221,6 @@ namespace Weapons
             bool reloadStarted = m_ActiveWeapon.TryStartReload(currentTimeSeconds);
             PublishReloadProgress();
 
-            if (reloadStarted)
-            {
-                Debug.Log(
-                    $"[Weapons] ReloadStarted | weaponId={m_ActiveDefinition.WeaponId} duration={m_ActiveDefinition.ReloadTimeSeconds:0.00}");
-            }
-
             return reloadStarted;
         }
 
@@ -238,17 +229,40 @@ namespace Weapons
         /// </summary>
         public void ResetForLevelStart()
         {
-            if (!m_IsInitialized || m_ActiveWeapon == null)
+            EnsureRuntimeDependencies();
+
+            if (!TryResolveSelectedWeapon(out WeaponConfigDefinition selectedDefinition, out string resolveError))
             {
-                InitializeWeaponRuntime();
+                Debug.LogWarning(
+                    $"[Weapons] ResetForLevelStartResolveFailed | error={resolveError} initialized={m_IsInitialized} activeWeapon={(m_ActiveDefinition != null ? m_ActiveDefinition.WeaponId : "none")}");
+
+                if (!m_IsInitialized || m_ActiveWeapon == null)
+                {
+                    InitializeWeaponRuntime();
+                    return;
+                }
+
+                m_ActiveWeapon.ResetState();
+                PublishAmmoChanged();
+                PublishReloadProgress();
+                return;
+            }
+
+            if (!m_IsInitialized || m_ActiveWeapon == null || m_ActiveDefinition == null)
+            {
+                EquipWeaponDefinition(selectedDefinition, "level_start_uninitialized");
+                return;
+            }
+
+            if (!string.Equals(m_ActiveDefinition.WeaponId, selectedDefinition.WeaponId, StringComparison.Ordinal))
+            {
+                EquipWeaponDefinition(selectedDefinition, "level_start_switch");
                 return;
             }
 
             m_ActiveWeapon.ResetState();
             PublishAmmoChanged();
             PublishReloadProgress();
-
-            Debug.Log($"[Weapons] ResetForLevelStart | weaponId={m_ActiveDefinition.WeaponId}");
         }
 
         #endregion
@@ -298,6 +312,7 @@ namespace Weapons
                     errorMessage = $"invalid_default_weapon id={catalog.DefaultWeaponId}";
                     return false;
                 }
+
             }
 
             if (!WeaponSelectionSession.TryGetSelectedWeapon(out definition))
@@ -307,6 +322,7 @@ namespace Weapons
             }
 
             errorMessage = string.Empty;
+            LogVerbose($"[Weapons] ResolveSelectedWeapon | weaponId={definition.WeaponId}");
             return true;
         }
 
@@ -349,6 +365,85 @@ namespace Weapons
             }
 
             m_HitResolver ??= new WeaponHitResolver();
+        }
+
+        private void EquipWeaponDefinition(WeaponConfigDefinition definition, string source)
+        {
+            if (definition == null)
+            {
+                Debug.LogError($"[Weapons] EquipFailed | reason=null_definition source={source}");
+                m_IsInitialized = false;
+                return;
+            }
+
+            m_ActiveDefinition = definition;
+            m_ActiveWeapon = new WeaponRuntime(definition);
+            m_IsInitialized = true;
+
+            PublishAmmoChanged();
+            PublishReloadProgress();
+            OnWeaponEquipped?.Invoke(definition);
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private static void LogVerbose(string message)
+        {
+            // Intentionally no-op: verbose trace logs were removed to keep only important logs.
+        }
+
+        private static string FormatVector2(Vector2 value)
+        {
+            return $"({value.x:0.00},{value.y:0.00})";
+        }
+
+        private static string DescribeCollider(Collider2D collider)
+        {
+            if (collider == null)
+            {
+                return "null";
+            }
+
+            string layerName = LayerMask.LayerToName(collider.gameObject.layer);
+            if (string.IsNullOrWhiteSpace(layerName))
+            {
+                layerName = $"layer_{collider.gameObject.layer}";
+            }
+
+            return $"{collider.name}(obj={collider.gameObject.name},layer={layerName},trigger={collider.isTrigger})";
+        }
+
+        private static string DescribeLayerMask(LayerMask layerMask)
+        {
+            int rawMask = layerMask.value;
+            if (rawMask == 0)
+            {
+                return "none(0)";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int layerIndex = 0; layerIndex < 32; layerIndex++)
+            {
+                if ((rawMask & (1 << layerIndex)) == 0)
+                {
+                    continue;
+                }
+
+                string layerName = LayerMask.LayerToName(layerIndex);
+                if (string.IsNullOrWhiteSpace(layerName))
+                {
+                    layerName = $"layer_{layerIndex}";
+                }
+
+                if (builder.Length > 0)
+                {
+                    builder.Append('|');
+                }
+
+                builder.Append(layerName);
+            }
+
+            return $"{builder}({rawMask})";
         }
 
         #endregion

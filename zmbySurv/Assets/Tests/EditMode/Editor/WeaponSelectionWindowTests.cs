@@ -62,6 +62,22 @@ namespace Weapons.Tests.EditMode
             Assert.That(error, Is.Not.Null.And.Contains("missing_resource"));
         }
 
+        [Test]
+        public void BeginSelection_WhenWindowInactive_ActivatesGameObject()
+        {
+            WeaponSelectionWindow window = CreateSelectionWindow();
+            window.gameObject.SetActive(false);
+
+            bool confirmed = false;
+            string error = null;
+
+            window.BeginSelection(() => confirmed = true, failure => error = failure);
+
+            Assert.That(window.gameObject.activeSelf, Is.True);
+            Assert.That(confirmed, Is.True);
+            Assert.That(error, Is.Null);
+        }
+
         private WeaponSelectionWindow CreateSelectionWindow()
         {
             GameObject windowObject = new GameObject("WeaponSelectionWindowTest");
