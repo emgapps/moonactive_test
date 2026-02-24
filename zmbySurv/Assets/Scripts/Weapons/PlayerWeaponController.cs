@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Weapons.Providers;
+using Weapons.Combat;
 using Weapons.Runtime;
 
 namespace Weapons
@@ -27,6 +28,10 @@ namespace Weapons
         private string m_ResourcesPath = DefaultResourcesPath;
         [SerializeField]
         private Transform m_MuzzleTransform;
+        [SerializeField]
+        private LayerMask m_HitMask = Physics2D.DefaultRaycastLayers;
+        [SerializeField]
+        private Collider2D m_OwnerCollider;
 
         #endregion
 
@@ -35,6 +40,7 @@ namespace Weapons
         private WeaponCatalogService m_CatalogService;
         private IWeapon m_ActiveWeapon;
         private WeaponConfigDefinition m_ActiveDefinition;
+        private WeaponHitResolver m_HitResolver;
         private bool m_IsInitialized;
 
         #endregion
@@ -99,6 +105,11 @@ namespace Weapons
 
         #region Unity Lifecycle
 
+        private void Awake()
+        {
+            EnsureRuntimeDependencies();
+        }
+
         private void Start()
         {
             InitializeWeaponRuntime();
@@ -135,6 +146,8 @@ namespace Weapons
         /// </summary>
         public void InitializeWeaponRuntime()
         {
+            EnsureRuntimeDependencies();
+
             if (!TryResolveSelectedWeapon(out WeaponConfigDefinition definition, out string errorMessage))
             {
                 Debug.LogError($"[Weapons] InitializationFailed | error={errorMessage}");
@@ -161,6 +174,8 @@ namespace Weapons
         /// <returns>True when shot was fired; otherwise false.</returns>
         public bool TryShoot(float currentTimeSeconds)
         {
+            EnsureRuntimeDependencies();
+
             if (!m_IsInitialized || m_ActiveWeapon == null)
             {
                 return false;
@@ -181,9 +196,15 @@ namespace Weapons
 
             PublishAmmoChanged();
             OnShotRequested?.Invoke(shot);
+            int appliedHits = m_HitResolver.ResolveShot(
+                shot: shot,
+                origin: MuzzlePosition,
+                direction: MuzzleDirection,
+                hitMask: m_HitMask,
+                ownerCollider: m_OwnerCollider);
 
             Debug.Log(
-                $"[Weapons] ShotRequested | weaponId={shot.WeaponId} ammo={m_ActiveWeapon.CurrentAmmo}/{m_ActiveWeapon.MagazineSize} pellets={shot.PelletCount} range={shot.Range:0.0}");
+                $"[Weapons] ShotRequested | weaponId={shot.WeaponId} ammo={m_ActiveWeapon.CurrentAmmo}/{m_ActiveWeapon.MagazineSize} pellets={shot.PelletCount} range={shot.Range:0.0} hits={appliedHits}");
 
             return true;
         }
@@ -318,6 +339,16 @@ namespace Weapons
             {
                 PublishAmmoChanged();
             }
+        }
+
+        private void EnsureRuntimeDependencies()
+        {
+            if (m_OwnerCollider == null)
+            {
+                m_OwnerCollider = GetComponent<Collider2D>();
+            }
+
+            m_HitResolver ??= new WeaponHitResolver();
         }
 
         #endregion

@@ -3,6 +3,7 @@ using Characters;
 using Level.Data;
 using Level.Providers;
 using UnityEngine;
+using Weapons.Combat;
 using Weapons.Runtime;
 using Weapons.UI;
 
@@ -54,6 +55,8 @@ namespace Level
         private Coins.CoinSpawner coinSpawner;
         [SerializeField]
         private HomeManager homeManager;
+        [SerializeField]
+        private int m_DefaultZombieHealth = 20;
 
         [Header("Weapon Selection")]
         [SerializeField]
@@ -422,6 +425,7 @@ namespace Level
                     zombieConfig.attackRange,
                     zombieConfig.attackPower,
                     BuildPatrolPoints(zombieConfig));
+                EnsureEnemyDamageable(enemyController.gameObject);
 
                 m_SpawnedZombies.Add(enemyController);
                 spawnedCount += 1;
@@ -528,6 +532,23 @@ namespace Level
             }
 
             return patrolPoints;
+        }
+
+        private void EnsureEnemyDamageable(GameObject enemyObject)
+        {
+            if (enemyObject == null)
+            {
+                return;
+            }
+
+            EnemyDamageable damageable = enemyObject.GetComponent<EnemyDamageable>();
+            if (damageable == null)
+            {
+                damageable = enemyObject.AddComponent<EnemyDamageable>();
+                Debug.Log($"[LevelLoader] EnemyDamageableAdded | enemy={enemyObject.name}");
+            }
+
+            damageable.ConfigureHealth(m_DefaultZombieHealth);
         }
 
         #endregion
