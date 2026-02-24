@@ -1,0 +1,21 @@
+{
+    "name": "EnemyAI.EditMode.Tests",
+    "rootNamespace": "EnemyAI.Tests.EditMode",
+    "references": [
+        "ZombieSurvival.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

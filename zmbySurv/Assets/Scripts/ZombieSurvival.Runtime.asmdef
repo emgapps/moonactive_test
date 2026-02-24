@@ -1,0 +1,14 @@
+{
+    "name": "ZombieSurvival.Runtime",
+    "rootNamespace": "ZombieSurvival",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

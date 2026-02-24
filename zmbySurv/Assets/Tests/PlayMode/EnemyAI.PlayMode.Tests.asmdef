@@ -1,0 +1,19 @@
+{
+    "name": "EnemyAI.PlayMode.Tests",
+    "rootNamespace": "EnemyAI.Tests.PlayMode",
+    "references": [
+        "ZombieSurvival.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}
