@@ -25,7 +25,7 @@ namespace Level.Providers
         /// </summary>
         /// <param name="onSuccess">Success callback with loaded level collection DTO.</param>
         /// <param name="onError">Error callback with actionable message.</param>
-        public void LoadLevelsData(Action<object> onSuccess, Action<string> onError)
+        public void LoadLevelsData(Action<LevelCollectionDto> onSuccess, Action<string> onError)
         {
             if (onSuccess == null)
             {

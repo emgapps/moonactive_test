@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using System.IO;
 using Characters;
+using Level.Data;
 using UnityEngine;
 
 namespace Level
@@ -56,8 +56,8 @@ namespace Level
 
         #region Private Fields
 
-        private object m_CurrentLevelData;
-        private object m_LevelCollection;
+        private LevelDataDto m_CurrentLevelData;
+        private LevelCollectionDto m_LevelCollection;
         private int m_CurrentLevelIndex = 0;
         private List<EnemyController> m_SpawnedZombies = new List<EnemyController>();
         private ILevelDataProvider m_DataProvider;
@@ -67,9 +67,15 @@ namespace Level
 
         #region Public Properties
 
-        public object CurrentLevelData => m_CurrentLevelData;
+        /// <summary>
+        /// Gets currently active level data.
+        /// </summary>
+        public LevelDataDto CurrentLevelData => m_CurrentLevelData;
 
-        public object CurrentCollection => m_LevelCollection;
+        /// <summary>
+        /// Gets loaded level collection.
+        /// </summary>
+        public LevelCollectionDto CurrentCollection => m_LevelCollection;
 
         public bool IsLastLevel()
         {
@@ -191,7 +197,7 @@ namespace Level
             );
         }
 
-        private void OnLevelsDataLoaded(object levelCollection)
+        private void OnLevelsDataLoaded(LevelCollectionDto levelCollection)
         {
             if (levelCollection == null)
             {
@@ -269,4 +275,3 @@ namespace Level
         #endregion
     }
 }
-
