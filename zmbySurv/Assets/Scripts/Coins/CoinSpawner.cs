@@ -178,6 +178,34 @@ namespace Coins
             Debug.Log("[CoinSpawner] CoinsCleared | reason=level_transition");
         }
 
+        /// <summary>
+        /// Returns an active coin instance to the pool.
+        /// </summary>
+        /// <param name="coin">Coin instance to return.</param>
+        public void ReturnCoinToPool(Coin coin)
+        {
+            if (coin == null)
+            {
+                Debug.LogWarning("[CoinSpawner] ReturnSkipped | reason=null_coin");
+                return;
+            }
+
+            if (m_CoinPool == null)
+            {
+                Debug.LogWarning($"[CoinSpawner] ReturnFallbackDestroy | coin={coin.name} reason=missing_pool");
+                Destroy(coin.gameObject);
+                return;
+            }
+
+            if (!m_ActiveCoins.Remove(coin))
+            {
+                Debug.LogWarning($"[CoinSpawner] ReturnRejected | coin={coin.name} reason=not_active");
+                return;
+            }
+
+            m_CoinPool.Release(coin);
+        }
+
         private void SpawnInitialCoins()
         {
             int coinsToSpawn = maxCoinsOnBoard;
@@ -261,8 +289,10 @@ namespace Coins
             {
                 Debug.LogWarning($"[CoinSpawner] ActiveCoinDuplicate | coin={newCoin.name}");
             }
-
-            m_CoinAmount += 1;
+            else
+            {
+                m_CoinAmount += 1;
+            }
         }
 
         private Vector3 GetRandomPositionInBounds()
