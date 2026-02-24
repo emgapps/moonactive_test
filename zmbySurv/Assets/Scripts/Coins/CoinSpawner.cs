@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Characters;
 using Coins;
 using Core.Pooling;
@@ -38,6 +39,8 @@ namespace Coins
         private int m_CoinAmount = 0;
         private bool m_Spawn = true;
         private GenericObjectPool<Coin> m_CoinPool;
+        private readonly HashSet<Coin> m_ActiveCoins = new HashSet<Coin>();
+        private readonly List<Coin> m_StaleCoinsBuffer = new List<Coin>();
 
         #endregion
 
@@ -85,6 +88,10 @@ namespace Coins
             {
                 m_PlayerController.OnCurrencyChanged -= HandleCoinCollected;
             }
+
+            m_CoinPool?.Clear();
+            m_ActiveCoins.Clear();
+            m_StaleCoinsBuffer.Clear();
         }
 
         #endregion
@@ -136,9 +143,33 @@ namespace Coins
         /// </summary>
         public void ClearAllCoins()
         {
-            for (int childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
+            if (m_CoinPool == null)
             {
-                Destroy(transform.GetChild(childIndex).gameObject);
+                for (int childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
+                {
+                    Destroy(transform.GetChild(childIndex).gameObject);
+                }
+            }
+            else
+            {
+                PruneStaleActiveCoins();
+
+                m_StaleCoinsBuffer.Clear();
+                foreach (Coin activeCoin in m_ActiveCoins)
+                {
+                    m_StaleCoinsBuffer.Add(activeCoin);
+                }
+
+                for (int coinIndex = 0; coinIndex < m_StaleCoinsBuffer.Count; coinIndex++)
+                {
+                    Coin activeCoin = m_StaleCoinsBuffer[coinIndex];
+                    if (activeCoin != null)
+                    {
+                        m_CoinPool.Release(activeCoin);
+                    }
+                }
+
+                m_ActiveCoins.Clear();
             }
 
             m_CoinAmount = 0;
@@ -208,13 +239,30 @@ namespace Coins
 
         private void SpawnNewCoin()
         {
-            Coin newCoin = Instantiate(coinPrefab, transform);
+            if (m_CoinPool == null)
+            {
+                Debug.LogError("[CoinSpawner] SpawnFailed | reason=missing_pool");
+                return;
+            }
+
+            Coin newCoin = m_CoinPool.Get();
+            if (newCoin == null)
+            {
+                Debug.LogError("[CoinSpawner] SpawnFailed | reason=pool_returned_null");
+                return;
+            }
+
             newCoin.SetSpawner(this);
 
             Vector3 spawnPosition = GetRandomPositionInBounds();
             newCoin.transform.position = spawnPosition;
 
-            m_CoinAmount++;
+            if (!m_ActiveCoins.Add(newCoin))
+            {
+                Debug.LogWarning($"[CoinSpawner] ActiveCoinDuplicate | coin={newCoin.name}");
+            }
+
+            m_CoinAmount += 1;
         }
 
         private Vector3 GetRandomPositionInBounds()
@@ -226,11 +274,33 @@ namespace Coins
 
         private void HandleCoinCollected(int newAmount)
         {
-            m_CoinAmount--;
+            m_CoinAmount = Mathf.Max(0, m_CoinAmount - 1);
 
             if (m_CoinAmount < maxCoinsOnBoard && m_Spawn && CanSpawnMoreCoins())
             {
                 SpawnNewCoin();
+            }
+        }
+
+        private void PruneStaleActiveCoins()
+        {
+            if (m_ActiveCoins.Count == 0)
+            {
+                return;
+            }
+
+            m_StaleCoinsBuffer.Clear();
+            foreach (Coin activeCoin in m_ActiveCoins)
+            {
+                if (activeCoin == null)
+                {
+                    m_StaleCoinsBuffer.Add(activeCoin);
+                }
+            }
+
+            for (int coinIndex = 0; coinIndex < m_StaleCoinsBuffer.Count; coinIndex++)
+            {
+                m_ActiveCoins.Remove(m_StaleCoinsBuffer[coinIndex]);
             }
         }
 
