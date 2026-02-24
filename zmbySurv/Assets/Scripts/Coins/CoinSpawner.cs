@@ -1,12 +1,16 @@
 using System;
 using Characters;
 using Coins;
+using Level.Data;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Random = UnityEngine.Random;
 
 namespace Coins
 {
+    /// <summary>
+    /// Spawns and maintains collectible coins based on level configuration.
+    /// </summary>
     public class CoinSpawner : MonoBehaviour
     {
         #region Serialized Fields
@@ -70,6 +74,10 @@ namespace Coins
 
         #region Public Methods
 
+        /// <summary>
+        /// Enables or disables coin spawning.
+        /// </summary>
+        /// <param name="state">True to allow spawning, false to stop spawning.</param>
         public void SetSpawnerState(bool state)
         {
             m_Spawn = state;
@@ -77,33 +85,54 @@ namespace Coins
 
         /// <summary>
         /// Called when a new level is loaded.
-        /// TODO: Change parameter type to your data class and extract the properties you need
         /// </summary>
-        public void OnLevelLoaded(object levelData)
+        /// <param name="levelData">Loaded level data.</param>
+        public void OnLevelLoaded(LevelDataDto levelData)
         {
-            if (levelData != null)
+            if (levelData == null)
             {
-                maxCoinsOnBoard = 5;
-                m_CoinAmount = 0;
-                m_Spawn = true;
-                
-                Debug.Log($"CoinSpawner: Level loaded");
-                
-                SpawnInitialCoins();
+                Debug.LogError("[CoinSpawner] LevelLoadFailed | reason=null_level_data");
+                return;
             }
+
+            if (levelData.maxCoinsOnBoard <= 0)
+            {
+                Debug.LogWarning(
+                    $"[CoinSpawner] InvalidLevelConfig | levelId={levelData.levelId} maxCoinsOnBoard={levelData.maxCoinsOnBoard} fallback=1");
+                maxCoinsOnBoard = 1;
+            }
+            else
+            {
+                maxCoinsOnBoard = levelData.maxCoinsOnBoard;
+            }
+
+            m_CoinAmount = 0;
+            m_Spawn = true;
+
+            Debug.Log($"[CoinSpawner] LevelLoaded | levelId={levelData.levelId} maxCoinsOnBoard={maxCoinsOnBoard}");
+
+            SpawnInitialCoins();
         }
 
+        /// <summary>
+        /// Clears all active coins and disables spawning until next level data arrives.
+        /// </summary>
         public void ClearAllCoins()
         {
+            for (int childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
+            {
+                Destroy(transform.GetChild(childIndex).gameObject);
+            }
+
             m_CoinAmount = 0;
             m_Spawn = false;
             
-            Debug.Log($"CoinSpawner: Cleared coins for level transition");
+            Debug.Log("[CoinSpawner] CoinsCleared | reason=level_transition");
         }
 
         private void SpawnInitialCoins()
         {
-            int coinsToSpawn = Mathf.Min(maxCoinsOnBoard, maxCoinsOnBoard);
+            int coinsToSpawn = maxCoinsOnBoard;
             
             for (int i = 0; i < coinsToSpawn; i++)
             {
@@ -113,7 +142,7 @@ namespace Coins
                 }
             }
             
-            Debug.Log($"CoinSpawner: Spawned {m_CoinAmount} initial coins");
+            Debug.Log($"[CoinSpawner] InitialSpawnCompleted | spawned={m_CoinAmount}");
         }
 
         #endregion
@@ -172,4 +201,3 @@ namespace Coins
         #endregion
     }
 }
-

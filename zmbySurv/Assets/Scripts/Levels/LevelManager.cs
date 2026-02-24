@@ -95,13 +95,15 @@ namespace Level
         /// </summary>
         private IEnumerator UpdateLevelNameOnStart()
         {
-            // Wait one frame to ensure level is loaded
-            yield return null;
-
-            if (m_LevelLoader != null && m_LevelLoader.CurrentLevelData != null)
+            const int maxFramesToWait = 120;
+            int waitedFrames = 0;
+            while (waitedFrames < maxFramesToWait && (m_LevelLoader == null || m_LevelLoader.CurrentLevelData == null))
             {
-                UpdateLevelName("Level");
+                waitedFrames++;
+                yield return null;
             }
+
+            UpdateLevelNameFromCurrentLevelData();
         }
 
         /// <summary>
@@ -301,10 +303,7 @@ namespace Level
                 m_LevelComplete = false;
                 m_IsRestarting = false;
 
-                if (m_LevelLoader.CurrentLevelData != null)
-                {
-                    UpdateLevelName("Level");
-                }
+                UpdateLevelNameFromCurrentLevelData();
             }
             else
             {
@@ -319,7 +318,6 @@ namespace Level
         /// </summary>
         private void LoadNextLevel()
         {
-
             // Try JSON level progression first
             if (m_LevelLoader != null)
             {
@@ -332,10 +330,7 @@ namespace Level
                     // Reset level complete flag for next level
                     m_LevelComplete = false;
 
-                    if (m_LevelLoader.CurrentLevelData != null)
-                    {
-                        UpdateLevelName("Level");
-                    }
+                    UpdateLevelNameFromCurrentLevelData();
                 }
                 else
                 {
@@ -344,9 +339,27 @@ namespace Level
                     StartCoroutine(ShowGameCompleteMessage());
                 }
             }
-
-            #endregion
         }
+
+        private void UpdateLevelNameFromCurrentLevelData()
+        {
+            if (m_LevelLoader == null || m_LevelLoader.CurrentLevelData == null)
+            {
+                return;
+            }
+
+            string configuredLevelName = m_LevelLoader.CurrentLevelData.levelName;
+            if (string.IsNullOrWhiteSpace(configuredLevelName))
+            {
+                configuredLevelName = m_LevelLoader.CurrentLevelData.levelId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(configuredLevelName))
+            {
+                UpdateLevelName(configuredLevelName);
+            }
+        }
+
+        #endregion
     }
 }
-
