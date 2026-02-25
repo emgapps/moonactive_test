@@ -25,7 +25,7 @@ Static analysis / compile gate:
 EditMode tests:
 ```bash
 /Applications/Unity/Hub/Editor/2022.3.62f3/Unity.app/Contents/MacOS/Unity \
-  -batchmode -quit -runTests -testPlatform EditMode \
+  -batchmode -nographics -runTests -testPlatform EditMode \
   -projectPath /Users/artemhulmetov/moonactive_test/zmbySurv \
   -testResults /Users/artemhulmetov/moonactive_test/tmp_shots_phase<PHASE>_editmode.xml \
   -logFile /Users/artemhulmetov/moonactive_test/tmp_shots_phase<PHASE>_editmode.log
@@ -34,7 +34,7 @@ EditMode tests:
 PlayMode tests:
 ```bash
 /Applications/Unity/Hub/Editor/2022.3.62f3/Unity.app/Contents/MacOS/Unity \
-  -batchmode -quit -runTests -testPlatform PlayMode \
+  -batchmode -nographics -runTests -testPlatform PlayMode \
   -projectPath /Users/artemhulmetov/moonactive_test/zmbySurv \
   -testResults /Users/artemhulmetov/moonactive_test/tmp_shots_phase<PHASE>_playmode.xml \
   -logFile /Users/artemhulmetov/moonactive_test/tmp_shots_phase<PHASE>_playmode.log
@@ -108,3 +108,14 @@ Risks:
 - Visual bullets can appear out of sync with instant damage -> endpoint is derived from exact same resolver pass and direction.
 - Missing scene/prefab references -> keep null-safe fallback with warnings while preserving damage flow.
 - Unity batchmode can fail if project is open in another Editor instance -> close active Unity instance before validation commands.
+
+## Execution Status
+
+- Phase 1 completed (`c50855f`): trace dispatch abstraction + resolver trace emission + `WeaponHitResolverTraceTests`.
+- Phase 2 completed (`a44454d`): `Bullet : MonoBehaviour, IPoolable` + `BulletTests`.
+- Phase 3 completed (`36865dc`): pooled `BulletSpawner` + `BulletSpawnerTests`.
+- Phase 4 completed (`5d6d0d5`): controller-to-spawner trace wiring + `PlayerWeaponControllerTraceDispatchTests`.
+- Phase 5 completed (`b075579`): PlayMode bullet despawn coverage via `BulletVisualsIntegrationTests`.
+- Phase 6 completed: hardening pass executed with clean compile log (`tmp_shots_phase6_compile.log`) and all targeted regression suites passing:
+  - EditMode: `BulletTests`, `BulletSpawnerTests`, `WeaponHitResolverTraceTests`, `PlayerWeaponControllerTests`, `PlayerWeaponControllerTraceDispatchTests`.
+  - PlayMode: `BulletVisualsIntegrationTests`, `WeaponsCombatIntegrationTests`, `WeaponsFlowIntegrationTests`.
