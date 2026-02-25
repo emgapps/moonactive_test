@@ -39,6 +39,7 @@ namespace Weapons.UI
         #region Private Fields
 
         private IWeaponImageProvider m_WeaponImageProvider;
+        private bool m_WasReloading;
 
         #endregion
 
@@ -64,6 +65,7 @@ namespace Weapons.UI
         private void OnDisable()
         {
             Unsubscribe();
+            m_WasReloading = false;
         }
 
         #endregion
@@ -101,10 +103,12 @@ namespace Weapons.UI
             {
                 HandleAmmoChanged(0, 0);
                 ApplyWeaponImage(null);
+                m_WasReloading = false;
                 return;
             }
 
             HandleAmmoChanged(m_PlayerWeaponController.CurrentAmmo, m_PlayerWeaponController.MagazineSize);
+            m_WasReloading = false;
 
             if (WeaponSelectionSession.TryGetSelectedWeapon(out WeaponConfigDefinition selectedDefinition))
             {
@@ -149,6 +153,12 @@ namespace Weapons.UI
 
         private void HandleReloadProgressChanged(bool isReloading, float progress01)
         {
+            if (m_WasReloading && !isReloading && m_PlayerWeaponController != null)
+            {
+                HandleAmmoChanged(m_PlayerWeaponController.CurrentAmmo, m_PlayerWeaponController.MagazineSize);
+            }
+
+            m_WasReloading = isReloading;
             SetReloadIndicatorVisible(isReloading);
 
             if (!isReloading)
