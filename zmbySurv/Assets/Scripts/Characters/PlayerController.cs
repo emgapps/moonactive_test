@@ -326,7 +326,7 @@ namespace Characters
             m_IsInvulnerable = invulnerable;
             Debug.Log($"PlayerController: Invulnerability set to {invulnerable}");
         }
-        
+
         private void EnsurePhysicsRotationConstraint()
         {
             if (m_Rigidbody2D == null)
@@ -343,9 +343,6 @@ namespace Characters
 
             m_Rigidbody2D.constraints = currentConstraints | RigidbodyConstraints2D.FreezeRotation;
             m_Rigidbody2D.angularVelocity = 0f;
-
-            Debug.LogWarning(
-                $"[Player] FreezeRotationApplied | player={name} previousConstraints={currentConstraints} appliedConstraints={m_Rigidbody2D.constraints}");
         }
 
         #endregion
