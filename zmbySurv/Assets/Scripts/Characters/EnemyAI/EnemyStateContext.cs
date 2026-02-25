@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Characters;
 using UnityEngine;
 
 namespace Characters.EnemyAI
@@ -9,14 +10,14 @@ namespace Characters.EnemyAI
     /// </summary>
     public sealed class EnemyStateContext
     {
-        private readonly EnemyController m_Controller;
+        private readonly IEnemyController m_Controller;
         private int m_CurrentPatrolPointIndex;
 
         /// <summary>
         /// Initializes a new context for an enemy controller.
         /// </summary>
-        /// <param name="controller">Enemy controller owning this context.</param>
-        public EnemyStateContext(EnemyController controller)
+        /// <param name="controller">Enemy controller abstraction owning this context.</param>
+        public EnemyStateContext(IEnemyController controller)
         {
             m_Controller = controller ?? throw new ArgumentNullException(nameof(controller));
             m_CurrentPatrolPointIndex = 0;
@@ -26,7 +27,7 @@ namespace Characters.EnemyAI
         /// <summary>
         /// Gets the enemy controller that owns this context.
         /// </summary>
-        public EnemyController Controller => m_Controller;
+        public IEnemyController Controller => m_Controller;
 
         /// <summary>
         /// Gets the index of the active patrol waypoint.
@@ -53,7 +54,7 @@ namespace Characters.EnemyAI
         {
             if (!HasPatrolPoints)
             {
-                return m_Controller.transform.position;
+                return m_Controller.CurrentPosition;
             }
 
             return PatrolPoints[m_CurrentPatrolPointIndex];

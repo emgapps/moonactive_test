@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
+using Characters;
 using Level;
 using NUnit.Framework;
 using UnityEngine;
@@ -48,12 +49,29 @@ namespace Level.Tests.EditMode
             LevelLoader loader = CreateLoader(defaultZombieHealth: ExpectedHealth, defaultZombieColliderRadius: 0.45f);
             GameObject enemyObject = CreateEnemyObject();
 
-            InvokePrivateMethod(loader, "EnsureEnemyDamageable", enemyObject);
+            InvokePrivateMethod(loader, "EnsureEnemyDamageable", enemyObject, null);
 
             EnemyDamageable damageable = enemyObject.GetComponent<EnemyDamageable>();
             Assert.That(damageable, Is.Not.Null);
             Assert.That(damageable.MaxHealth, Is.EqualTo(ExpectedHealth));
             Assert.That(damageable.CurrentHealth, Is.EqualTo(ExpectedHealth));
+        }
+
+        [Test]
+        public void EnsureEnemyDamageable_WhenControllerProvided_ConfiguresDamageCallback()
+        {
+            LevelLoader loader = CreateLoader(defaultZombieHealth: 25, defaultZombieColliderRadius: 0.45f);
+            GameObject enemyObject = CreateEnemyObject();
+            TestEnemyController enemyController = new TestEnemyController();
+
+            InvokePrivateMethod(loader, "EnsureEnemyDamageable", enemyObject, enemyController);
+
+            EnemyDamageable damageable = enemyObject.GetComponent<EnemyDamageable>();
+            Assert.That(damageable, Is.Not.Null);
+
+            bool damageApplied = damageable.TryApplyDamage(3, Vector2.zero, "test_weapon");
+            Assert.That(damageApplied, Is.True);
+            Assert.That(enemyController.OnDamageCallCount, Is.EqualTo(1));
         }
 
         private LevelLoader CreateLoader(int defaultZombieHealth, float defaultZombieColliderRadius)
@@ -87,6 +105,68 @@ namespace Level.Tests.EditMode
             FieldInfo fieldInfo = instance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(fieldInfo, Is.Not.Null, $"Expected private field '{fieldName}' to exist.");
             fieldInfo.SetValue(instance, value);
+        }
+
+        private sealed class TestEnemyController : IEnemyController
+        {
+            public string ControllerName => "TestEnemyController";
+
+            public IReadOnlyList<Vector2> PatrolPoints => System.Array.Empty<Vector2>();
+
+            public Transform PlayerTarget => null;
+
+            public float PatrolSpeed => 0f;
+
+            public float ChaseSpeed => 0f;
+
+            public Vector2 CurrentPosition => Vector2.zero;
+
+            public int OnDamageCallCount { get; private set; }
+
+            public void ApplyLevelConfiguration(
+                float moveSpeed,
+                float chaseSpeed,
+                float sightRange,
+                float attackRange,
+                int attackPower,
+                List<Vector2> patrolPoints)
+            {
+            }
+
+            public void MoveTo(Vector2 target)
+            {
+            }
+
+            public void MoveTo(Vector2 target, float movementSpeed)
+            {
+            }
+
+            public void StopMovement()
+            {
+            }
+
+            public void PlayAnimation(string animation)
+            {
+            }
+
+            public bool IsPlayerVisible()
+            {
+                return false;
+            }
+
+            public bool IsPlayerInAttackRange()
+            {
+                return false;
+            }
+
+            public void Attack()
+            {
+            }
+
+            public void OnDamage()
+            {
+                OnDamageCallCount += 1;
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Characters.EnemyAI;
 using UnityEngine;
@@ -9,7 +10,7 @@ namespace Characters
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(Animator))]
-    public class EnemyController : MonoBehaviour
+    public class EnemyController : MonoBehaviour, IEnemyController
     {
         #region Serialized Fields
 
@@ -42,6 +43,14 @@ namespace Characters
         private Rigidbody2D rb;
         [SerializeField]
         private Animator m_Animator;
+        [SerializeField]
+        private SpriteRenderer m_EnemySpriteRenderer;
+
+        [Header("Damage Feedback")]
+        [SerializeField]
+        private Color m_DamageFlashColor = Color.red;
+        [SerializeField]
+        private float m_DamageFlashDurationSeconds = 0.1f;
 
         #endregion
 
@@ -77,10 +86,19 @@ namespace Characters
 
         private bool m_IsAiInitialized;
         private bool m_HasLoggedMissingPlayer;
+        private bool m_IsDamageFlashActive;
+        private bool m_HasCachedDefaultSpriteColor;
+        private Color m_DefaultSpriteColor = Color.white;
+        private Coroutine m_DamageFlashCoroutine;
 
         #endregion
 
         #region Public Properties
+
+        /// <summary>
+        /// Gets enemy name used in diagnostics.
+        /// </summary>
+        public string ControllerName => name;
 
         /// <summary>
         /// Gets or sets the player target used by the enemy.
@@ -116,6 +134,11 @@ namespace Characters
         public float ChaseSpeed => m_ChaseSpeed;
 
         /// <summary>
+        /// Gets current world-space enemy position.
+        /// </summary>
+        public Vector2 CurrentPosition => transform.position;
+
+        /// <summary>
         /// Gets current AI state name for diagnostics.
         /// </summary>
         public string CurrentStateName => m_StateMachine != null ? m_StateMachine.CurrentStateName : "None";
@@ -137,6 +160,22 @@ namespace Characters
             if (m_Animator == null)
             {
                 m_Animator = GetComponent<Animator>();
+            }
+
+            if (m_EnemySpriteRenderer == null)
+            {
+                m_EnemySpriteRenderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (m_EnemySpriteRenderer == null)
+            {
+                m_EnemySpriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            }
+
+            if (m_EnemySpriteRenderer != null)
+            {
+                m_DefaultSpriteColor = m_EnemySpriteRenderer.color;
+                m_HasCachedDefaultSpriteColor = true;
             }
 
             if (rb == null || m_Animator == null)
@@ -174,6 +213,7 @@ namespace Characters
         /// </summary>
         private void OnDisable()
         {
+            ResetDamageFeedbackState();
             TeardownAi("disabled");
         }
 
@@ -182,6 +222,7 @@ namespace Characters
         /// </summary>
         private void OnDestroy()
         {
+            ResetDamageFeedbackState();
             TeardownAi("destroyed");
         }
 
@@ -345,6 +386,28 @@ namespace Characters
             Player.ReduceLife(m_AttackPower);
         }
 
+        /// <summary>
+        /// Handles incoming damage feedback with a short debounced flash.
+        /// </summary>
+        public void OnDamage()
+        {
+            if (!TryResolveDamageFeedbackRenderer())
+            {
+                Debug.LogWarning($"[EnemyAI] DamageFeedbackSkipped | enemy={name} reason=missing_sprite_renderer");
+                return;
+            }
+
+            if (m_IsDamageFlashActive)
+            {
+                return;
+            }
+
+            m_EnemySpriteRenderer.color = m_DamageFlashColor;
+            m_IsDamageFlashActive = true;
+            float flashDurationSeconds = Mathf.Max(0.01f, m_DamageFlashDurationSeconds);
+            m_DamageFlashCoroutine = StartCoroutine(ResetDamageFeedbackAfterDelay(flashDurationSeconds));
+        }
+
         #endregion
 
         #region Private Helper Methods
@@ -435,6 +498,55 @@ namespace Characters
             m_IsAiInitialized = false;
 
             Debug.Log($"[EnemyAI] Teardown | enemy={name} reason={reason}");
+        }
+
+        private bool TryResolveDamageFeedbackRenderer()
+        {
+            if (m_EnemySpriteRenderer == null)
+            {
+                m_EnemySpriteRenderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (m_EnemySpriteRenderer == null)
+            {
+                m_EnemySpriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            }
+
+            if (m_EnemySpriteRenderer == null)
+            {
+                return false;
+            }
+
+            if (!m_HasCachedDefaultSpriteColor)
+            {
+                m_DefaultSpriteColor = m_EnemySpriteRenderer.color;
+                m_HasCachedDefaultSpriteColor = true;
+            }
+
+            return true;
+        }
+
+        private IEnumerator ResetDamageFeedbackAfterDelay(float delaySeconds)
+        {
+            yield return new WaitForSeconds(delaySeconds);
+            m_DamageFlashCoroutine = null;
+            ResetDamageFeedbackState();
+        }
+
+        private void ResetDamageFeedbackState()
+        {
+            if (m_DamageFlashCoroutine != null)
+            {
+                StopCoroutine(m_DamageFlashCoroutine);
+                m_DamageFlashCoroutine = null;
+            }
+
+            if (m_EnemySpriteRenderer != null && m_HasCachedDefaultSpriteColor)
+            {
+                m_EnemySpriteRenderer.color = m_DefaultSpriteColor;
+            }
+
+            m_IsDamageFlashActive = false;
         }
 
         #endregion

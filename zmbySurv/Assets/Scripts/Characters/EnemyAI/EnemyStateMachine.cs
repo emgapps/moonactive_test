@@ -71,7 +71,7 @@ namespace Characters.EnemyAI
             m_CurrentState.Enter();
 
             Debug.Log(
-                $"[EnemyAI] StateTransition | enemy={m_Context.Controller.name} from={previousStateName} to={m_CurrentState.Name} reason={reason}");
+                $"[EnemyAI] StateTransition | enemy={m_Context.Controller.ControllerName} from={previousStateName} to={m_CurrentState.Name} reason={reason}");
 
             return true;
         }

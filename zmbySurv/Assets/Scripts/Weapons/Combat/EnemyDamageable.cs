@@ -1,3 +1,4 @@
+using Characters;
 using UnityEngine;
 
 namespace Weapons.Combat
@@ -22,6 +23,7 @@ namespace Weapons.Combat
 
         private int m_CurrentHealth;
         private bool m_IsAlive;
+        private IEnemyController m_EnemyController;
 
         #endregion
 
@@ -61,6 +63,15 @@ namespace Weapons.Combat
         #region Public API
 
         /// <summary>
+        /// Configures enemy controller callbacks used by this damage receiver.
+        /// </summary>
+        /// <param name="enemyController">Controller receiving damage notifications.</param>
+        public void Setup(IEnemyController enemyController)
+        {
+            m_EnemyController = enemyController;
+        }
+
+        /// <summary>
         /// Configures max health and resets current health.
         /// </summary>
         /// <param name="maxHealth">New max health value.</param>
@@ -93,6 +104,7 @@ namespace Weapons.Combat
             m_CurrentHealth -= damageAmount;
             Debug.Log(
                 $"[Weapons] DamageApplied | enemy={name} weapon={sourceWeaponId} damage={damageAmount} health={m_CurrentHealth}/{m_MaxHealth} hit=({hitPoint.x:0.00},{hitPoint.y:0.00})");
+            m_EnemyController?.OnDamage();
 
             if (m_CurrentHealth > 0)
             {

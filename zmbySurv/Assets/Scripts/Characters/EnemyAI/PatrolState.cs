@@ -59,7 +59,7 @@ namespace Characters.EnemyAI
             m_Context.Controller.MoveTo(patrolTarget, m_Context.Controller.PatrolSpeed);
 
             float distanceToPatrolPoint = Vector2.Distance(
-                m_Context.Controller.transform.position,
+                m_Context.Controller.CurrentPosition,
                 patrolTarget);
 
             if (distanceToPatrolPoint <= WaypointReachDistance)
