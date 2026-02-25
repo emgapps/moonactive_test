@@ -58,22 +58,25 @@ namespace Weapons.Tests.EditMode
             PlayerWeaponController controller = CreateController();
             controller.InitializeWeaponRuntime();
 
-            bool sawReloading = false;
+            int reloadSignals = 0;
             controller.OnReloadProgressChanged += (isReloading, _) =>
             {
                 if (isReloading)
                 {
-                    sawReloading = true;
+                    reloadSignals += 1;
                 }
             };
 
             bool firstShot = controller.TryShoot(0f);
+            int reloadSignalsAfterFirstShot = reloadSignals;
+            bool manualReloadImmediatelyAfterLastShot = controller.TryReload(0.01f);
             bool blockedShot = controller.TryShoot(1f);
             bool shotAfterReload = controller.TryShoot(2.5f);
 
             Assert.That(firstShot, Is.True);
+            Assert.That(reloadSignalsAfterFirstShot, Is.GreaterThan(0));
+            Assert.That(manualReloadImmediatelyAfterLastShot, Is.False);
             Assert.That(blockedShot, Is.False);
-            Assert.That(sawReloading, Is.True);
             Assert.That(shotAfterReload, Is.True);
         }
 

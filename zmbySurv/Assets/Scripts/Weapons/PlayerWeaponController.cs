@@ -194,6 +194,12 @@ namespace Weapons
             }
 
             PublishAmmoChanged();
+
+            if (m_AutoReloadOnEmpty && m_ActiveWeapon.CurrentAmmo <= 0)
+            {
+                TryReload(currentTimeSeconds);
+            }
+
             OnShotRequested?.Invoke(shot);
             Vector2 muzzlePosition = MuzzlePosition;
             Vector2 muzzleDirection = MuzzleDirection;
