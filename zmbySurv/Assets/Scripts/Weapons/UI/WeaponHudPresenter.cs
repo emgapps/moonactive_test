@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Weapons.Providers;
 using Weapons.Runtime;
 
 namespace Weapons.UI
@@ -23,6 +24,8 @@ namespace Weapons.UI
         [SerializeField]
         private Text m_AmmoText;
         [SerializeField]
+        private Image m_WeaponImage;
+        [SerializeField]
         private GameObject m_ReloadIndicatorRoot;
         [SerializeField]
         private Image m_ReloadFillImage;
@@ -30,6 +33,12 @@ namespace Weapons.UI
         private Slider m_ReloadSlider;
         [SerializeField]
         private Text m_ReloadText;
+
+        #endregion
+
+        #region Private Fields
+
+        private IWeaponImageProvider m_WeaponImageProvider;
 
         #endregion
 
@@ -42,6 +51,7 @@ namespace Weapons.UI
                 m_PlayerWeaponController = FindObjectOfType<PlayerWeaponController>();
             }
 
+            m_WeaponImageProvider ??= new WeaponImageProvider();
             SetReloadIndicatorVisible(false);
         }
 
@@ -89,17 +99,25 @@ namespace Weapons.UI
         {
             if (m_PlayerWeaponController == null || !m_PlayerWeaponController.IsInitialized)
             {
+                HandleAmmoChanged(0, 0);
+                ApplyWeaponImage(null);
                 return;
             }
 
-            if (m_AmmoText != null)
-            {
-                m_AmmoText.text = $"{m_PlayerWeaponController.CurrentAmmo}/{m_PlayerWeaponController.MagazineSize}";
-            }
+            HandleAmmoChanged(m_PlayerWeaponController.CurrentAmmo, m_PlayerWeaponController.MagazineSize);
 
-            if (m_WeaponNameText != null)
+            if (WeaponSelectionSession.TryGetSelectedWeapon(out WeaponConfigDefinition selectedDefinition))
             {
-                m_WeaponNameText.text = m_PlayerWeaponController.CurrentWeaponId;
+                HandleWeaponEquipped(selectedDefinition);
+            }
+            else
+            {
+                ApplyWeaponImage(null);
+
+                if (m_WeaponNameText != null)
+                {
+                    m_WeaponNameText.text = m_PlayerWeaponController.CurrentWeaponId;
+                }
             }
         }
 
@@ -107,6 +125,7 @@ namespace Weapons.UI
         {
             if (definition == null)
             {
+                ApplyWeaponImage(null);
                 return;
             }
 
@@ -114,6 +133,8 @@ namespace Weapons.UI
             {
                 m_WeaponNameText.text = definition.DisplayName;
             }
+
+            ApplyWeaponImage(definition);
         }
 
         private void HandleAmmoChanged(int currentAmmo, int maxAmmo)
@@ -173,6 +194,22 @@ namespace Weapons.UI
             {
                 m_ReloadIndicatorRoot.SetActive(visible);
             }
+        }
+
+        private void ApplyWeaponImage(WeaponConfigDefinition definition)
+        {
+            if (m_WeaponImage == null)
+            {
+                return;
+            }
+
+            if (definition == null || m_WeaponImageProvider == null)
+            {
+                m_WeaponImage.sprite = null;
+                return;
+            }
+
+            m_WeaponImage.sprite = m_WeaponImageProvider.GetWeaponImage(definition);
         }
 
         #endregion
