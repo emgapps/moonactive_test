@@ -3012,6 +3012,7 @@ MonoBehaviour:
   m_SelectionRoot: {fileID: 672217081}
   m_WeaponNameText: {fileID: 489228909}
   m_WeaponStatsText: {fileID: 107011254}
+  m_WeaponImage: {fileID: 839869564}
   m_PageText: {fileID: 0}
   m_ErrorText: {fileID: 0}
   m_PreviousButton: {fileID: 1463255346}
@@ -4344,6 +4345,8 @@ MonoBehaviour:
   m_Life: 100
   m_LifeText: {fileID: 2115375713}
   m_CoinText: {fileID: 1760849820}
+  m_bulletsText: {fileID: 1118662949}
+  m_weaponImage: {fileID: 133087598}
 --- !u!50 &1363059460
 Rigidbody2D:
   serializedVersion: 4
