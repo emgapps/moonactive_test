@@ -13,6 +13,10 @@ namespace Characters
     [RequireComponent(typeof(Animator))]
     public class PlayerController : MonoBehaviour
     {
+        private const float RotationInputThreshold = 0.1f;
+        private const float IdleRotationAngularVelocityThreshold = 1f;
+        private const float IdleRotationWarningIntervalSeconds = 0.5f;
+
         #region Serialized Fields
 
         [Header("Movement Settings")]
@@ -45,6 +49,8 @@ namespace Characters
         private bool m_IsDead = false;
         private bool m_IsInvulnerable = false;
         private PlayerWeaponController m_PlayerWeaponController;
+        private float m_LastIdleRotationWarningTime = float.NegativeInfinity;
+        private bool m_IsUnexpectedIdleRotationActive;
 
         #endregion
 
@@ -148,6 +154,8 @@ namespace Characters
             {
                 m_PlayerWeaponController = gameObject.AddComponent<PlayerWeaponController>();
             }
+
+            EnsurePhysicsRotationConstraint();
         }
 
         /// <summary>
@@ -185,10 +193,13 @@ namespace Characters
             m_Rigidbody2D.velocity = m_MoveDirection * speed;
 
             // Handle rotation based on movement direction
-            if (m_MoveDirection.magnitude > 0.1f)
+            float moveDirectionMagnitude = m_MoveDirection.magnitude;
+            if (moveDirectionMagnitude > RotationInputThreshold)
             {
                 float angle = Mathf.Atan2(m_MoveDirection.y, m_MoveDirection.x) * Mathf.Rad2Deg;
                 transform.rotation = Quaternion.Euler(0, 0, angle);
+                m_IsUnexpectedIdleRotationActive = false;
+                return;
             }
         }
 
@@ -314,6 +325,27 @@ namespace Characters
         {
             m_IsInvulnerable = invulnerable;
             Debug.Log($"PlayerController: Invulnerability set to {invulnerable}");
+        }
+        
+        private void EnsurePhysicsRotationConstraint()
+        {
+            if (m_Rigidbody2D == null)
+            {
+                Debug.LogError($"[Player] MissingRigidbody | player={name}");
+                return;
+            }
+
+            RigidbodyConstraints2D currentConstraints = m_Rigidbody2D.constraints;
+            if ((currentConstraints & RigidbodyConstraints2D.FreezeRotation) != 0)
+            {
+                return;
+            }
+
+            m_Rigidbody2D.constraints = currentConstraints | RigidbodyConstraints2D.FreezeRotation;
+            m_Rigidbody2D.angularVelocity = 0f;
+
+            Debug.LogWarning(
+                $"[Player] FreezeRotationApplied | player={name} previousConstraints={currentConstraints} appliedConstraints={m_Rigidbody2D.constraints}");
         }
 
         #endregion
