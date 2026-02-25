@@ -48,7 +48,7 @@ namespace Weapons.Combat
 
         private void Awake()
         {
-            EnsurePoolInitialized();
+            EnsurePoolInitialized(logWhenMissingPrefab: false);
         }
 
         private void OnDestroy()
@@ -67,7 +67,7 @@ namespace Weapons.Combat
         /// <param name="shotTrace">Resolved pellet trace payload.</param>
         public void DispatchShotTrace(WeaponShotTrace shotTrace)
         {
-            EnsurePoolInitialized();
+            EnsurePoolInitialized(logWhenMissingPrefab: true);
             if (m_BulletPool == null)
             {
                 Debug.LogWarning("[BulletSpawner] DispatchSkipped | reason=pool_not_initialized");
@@ -147,7 +147,7 @@ namespace Weapons.Combat
             m_ActiveBullets.Clear();
         }
 
-        private void EnsurePoolInitialized()
+        private void EnsurePoolInitialized(bool logWhenMissingPrefab)
         {
             if (m_BulletPool != null)
             {
@@ -156,7 +156,10 @@ namespace Weapons.Combat
 
             if (m_BulletPrefab == null)
             {
-                Debug.LogError("[BulletSpawner] PoolInitializationFailed | reason=missing_bullet_prefab");
+                if (logWhenMissingPrefab)
+                {
+                    Debug.LogError("[BulletSpawner] PoolInitializationFailed | reason=missing_bullet_prefab");
+                }
                 return;
             }
 

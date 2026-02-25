@@ -33,6 +33,9 @@ namespace Weapons
         private LayerMask m_HitMask = Physics2D.DefaultRaycastLayers;
         [SerializeField]
         private Collider2D m_OwnerCollider;
+        [Header("Visuals")]
+        [SerializeField]
+        private BulletSpawner m_BulletSpawner;
 
         #endregion
 
@@ -42,6 +45,7 @@ namespace Weapons
         private IWeapon m_ActiveWeapon;
         private WeaponConfigDefinition m_ActiveDefinition;
         private WeaponHitResolver m_HitResolver;
+        private IWeaponShotTraceDispatcher m_ShotTraceDispatcher;
         private bool m_IsInitialized;
 
         #endregion
@@ -201,7 +205,8 @@ namespace Weapons
                 origin: muzzlePosition,
                 direction: muzzleDirection,
                 hitMask: m_HitMask,
-                ownerCollider: m_OwnerCollider);
+                ownerCollider: m_OwnerCollider,
+                shotTraceDispatcher: m_ShotTraceDispatcher);
 
             return true;
         }
@@ -364,7 +369,13 @@ namespace Weapons
                 m_OwnerCollider = GetComponent<Collider2D>();
             }
 
+            if (m_BulletSpawner == null)
+            {
+                m_BulletSpawner = GetComponentInChildren<BulletSpawner>();
+            }
+
             m_HitResolver ??= new WeaponHitResolver();
+            m_ShotTraceDispatcher = m_BulletSpawner;
         }
 
         private void EquipWeaponDefinition(WeaponConfigDefinition definition, string source)
