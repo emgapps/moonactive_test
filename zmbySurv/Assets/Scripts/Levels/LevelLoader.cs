@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Characters;
 using Level.Data;
@@ -81,6 +82,11 @@ namespace Level
         #endregion
 
         #region Public Properties
+
+        /// <summary>
+        /// Raised when current level data has been resolved.
+        /// </summary>
+        public event Action CurrentLevelDataChanged;
 
         /// <summary>
         /// Gets currently active level data.
@@ -452,7 +458,7 @@ namespace Level
                     zombieConfig.attackPower,
                     BuildPatrolPoints(zombieConfig));
                 EnsureEnemyCombatCollider(enemyController.gameObject);
-                EnsureEnemyDamageable(enemyController.gameObject);
+                EnsureEnemyDamageable(enemyController.gameObject, enemyController);
 
                 m_SpawnedZombies.Add(enemyController);
                 spawnedCount += 1;
@@ -533,6 +539,7 @@ namespace Level
                 return false;
             }
 
+            CurrentLevelDataChanged?.Invoke();
             return true;
         }
 
@@ -559,7 +566,7 @@ namespace Level
             return patrolPoints;
         }
 
-        private void EnsureEnemyDamageable(GameObject enemyObject)
+        private void EnsureEnemyDamageable(GameObject enemyObject, IEnemyController enemyController)
         {
             if (enemyObject == null)
             {
@@ -573,6 +580,7 @@ namespace Level
             }
 
             damageable.ConfigureHealth(m_DefaultZombieHealth);
+            damageable.Setup(enemyController);
         }
 
         private void EnsureEnemyCombatCollider(GameObject enemyObject)

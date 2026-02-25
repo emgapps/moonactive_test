@@ -85,25 +85,9 @@ namespace Level
             // Subscribe to level loader events to update level name
             if (m_LevelLoader != null)
             {
-                // We'll get the level name when it's loaded
-                StartCoroutine(UpdateLevelNameOnStart());
+                m_LevelLoader.CurrentLevelDataChanged += HandleCurrentLevelDataChanged;
+                UpdateLevelNameFromCurrentLevelData();
             }
-        }
-
-        /// <summary>
-        /// Coroutine to update the level name after the level has loaded.
-        /// </summary>
-        private IEnumerator UpdateLevelNameOnStart()
-        {
-            const int maxFramesToWait = 120;
-            int waitedFrames = 0;
-            while (waitedFrames < maxFramesToWait && (m_LevelLoader == null || m_LevelLoader.CurrentLevelData == null))
-            {
-                waitedFrames++;
-                yield return null;
-            }
-
-            UpdateLevelNameFromCurrentLevelData();
         }
 
         /// <summary>
@@ -119,6 +103,11 @@ namespace Level
             if (m_PlayerController != null)
             {
                 m_PlayerController.OnPlayerDied -= HandlePlayerDeath;
+            }
+
+            if (m_LevelLoader != null)
+            {
+                m_LevelLoader.CurrentLevelDataChanged -= HandleCurrentLevelDataChanged;
             }
         }
 
@@ -196,6 +185,11 @@ namespace Level
 
             // Show death message and restart level after delay
             StartCoroutine(ShowDeathMessage());
+        }
+
+        private void HandleCurrentLevelDataChanged()
+        {
+            UpdateLevelNameFromCurrentLevelData();
         }
 
         #endregion
