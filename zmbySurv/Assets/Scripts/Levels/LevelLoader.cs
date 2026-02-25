@@ -184,8 +184,14 @@ namespace Level
             }
 
             m_CurrentLevelIndex += 1;
-            
-            LoadLevel();
+            if (!TryResolveCurrentLevelData())
+            {
+                Debug.LogError(
+                    $"[LevelLoader] LoadNextLevelFailed | reason=resolve_next_level_data index={m_CurrentLevelIndex}");
+                return false;
+            }
+
+            RequestWeaponSelectionThenLoadLevel("next_level");
             return true;
         }
 
@@ -216,25 +222,15 @@ namespace Level
             LogVerbose(
                 $"[LevelLoader] StartupFlowBegin | requireWeaponSelection={m_RequireWeaponSelection} hasSessionSelection={WeaponSelectionSession.HasSelection} selectionWindow={BuildSelectionWindowState()}");
 
-            if (!m_RequireWeaponSelection || WeaponSelectionSession.HasSelection)
+            if (!m_RequireWeaponSelection)
             {
                 LogVerbose(
-                    $"[LevelLoader] StartupFlowLoadLevelDirectly | reason={(m_RequireWeaponSelection ? "selection_already_present" : "selection_not_required")}");
+                    "[LevelLoader] StartupFlowLoadLevelDirectly | reason=selection_not_required");
                 LoadLevel();
                 return;
             }
 
-            if (m_WeaponSelectionWindow != null)
-            {
-                m_WeaponSelectionWindow.BeginSelection(
-                    onConfirmed: HandleWeaponSelectionConfirmed,
-                    onFailed: HandleWeaponSelectionFailed);
-                return;
-            }
-
-            Debug.LogWarning("[LevelLoader] StartupFlowFallbackAutoSelect | reason=missing_selection_window_reference");
-            AutoSelectDefaultWeapon();
-            LoadLevel();
+            RequestWeaponSelectionThenLoadLevel("startup");
         }
 
         private void InitializeDataProvider()
@@ -256,15 +252,27 @@ namespace Level
             }
         }
 
-        private void HandleWeaponSelectionConfirmed()
+        private void RequestWeaponSelectionThenLoadLevel(string source)
         {
-            LoadLevel();
-        }
+            if (m_WeaponSelectionWindow != null)
+            {
+                m_WeaponSelectionWindow.BeginSelection(
+                    onConfirmed: () =>
+                    {
+                        LoadLevel();
+                    },
+                    onFailed: errorMessage =>
+                    {
+                        Debug.LogWarning(
+                            $"[LevelLoader] WeaponSelectionFallback | source={source} error={errorMessage} hasSelectionWindow={(m_WeaponSelectionWindow != null)}");
+                        AutoSelectDefaultWeapon();
+                        LoadLevel();
+                    });
+                return;
+            }
 
-        private void HandleWeaponSelectionFailed(string errorMessage)
-        {
             Debug.LogWarning(
-                $"[LevelLoader] WeaponSelectionFallback | error={errorMessage} hasSelectionWindow={(m_WeaponSelectionWindow != null)}");
+                $"[LevelLoader] WeaponSelectionFallbackAutoSelect | source={source} reason=missing_selection_window_reference");
             AutoSelectDefaultWeapon();
             LoadLevel();
         }
